@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Runtime files
+.server.pid
+
+# Test outputs
+test_screenshots/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

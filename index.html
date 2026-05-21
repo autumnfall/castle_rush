@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>城堡突袭</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <h1>🏰 城堡突袭</h1>
+
+  <!-- 模式选择 -->
+  <div id="mode-select">
+    <h2>选择游戏模式</h2>
+    <div class="mode-grid">
+      <div class="mode-card" data-mode="basic" onclick="selectMode('basic')">
+        <h3>🎴 基础游戏</h3>
+        <p>标准规则，适合入门<br>无指挥官，无城防</p>
+      </div>
+      <div class="mode-card" data-mode="commander" onclick="selectMode('commander')">
+        <h3>🎖️ 指挥官扩展</h3>
+        <p>选择指挥官，使用独特战术<br>5位指挥官可选</p>
+      </div>
+      <div class="mode-card" data-mode="defense" onclick="selectMode('defense')">
+        <h3>🏛️ 城防扩展</h3>
+        <p>时间流逝，城防强化<br>疲劳规则，回合阶段化</p>
+      </div>
+      <div class="mode-card" data-mode="commander+defense" onclick="selectMode('commander+defense')">
+        <h3>⚔️ 指挥官+城防</h3>
+        <p>完整体验<br>7位指挥官+城防系统</p>
+      </div>
+    </div>
+    <button id="btn-mode-confirm" onclick="confirmMode()" disabled>请选择游戏模式</button>
+  </div>
+
+  <!-- 指挥官选择 -->
+  <div id="commander-select" class="hidden">
+    <h2>选择指挥官</h2>
+    <div class="commander-grid" id="commander-list"></div>
+    <div id="commander-detail" style="background:rgba(0,0,0,0.3);border-radius:8px;padding:12px;margin-bottom:12px;text-align:left;font-size:13px;line-height:1.6;"></div>
+    <button id="btn-cmd-confirm" onclick="confirmCommander()" disabled>请选择指挥官</button>
+    <button class="danger" onclick="backToMode()">返回</button>
+  </div>
+
+  <!-- 游戏主界面 -->
+  <div id="game-screen" class="hidden">
+    <div id="info-bar">
+      <span>牌库: <b id="deck-count">0</b></span>
+      <span>弃牌: <b id="discard-count">0</b></span>
+      <span>回合: <b id="turn-count">1</b></span>
+      <span>剩余敌人: <b id="enemy-count">16</b></span>
+      <span>物资: <b id="supply-count">0</b> (♥<b id="supply-h">0</b> ♦<b id="supply-d">0</b> ♣<b id="supply-c">0</b> ♠<b id="supply-s">0</b>)</span>
+    </div>
+
+    <div id="commander-bar">
+      <div class="cmd-title" id="cmd-title">指挥官</div>
+      <div class="cmd-skills" id="cmd-skills"></div>
+    </div>
+
+    <div id="board-area"></div>
+
+    <div id="player-area">
+      <div class="section">
+        <div class="section-title">🎴 手牌 (点击选中，再点击敌人攻城)</div>
+        <div id="hand-container"></div>
+        <div id="mulligan-bar" style="display:none;">
+          <button id="btn-mulligan" onclick="doMulligan()">🔄 重调手牌 (剩余 <span id="mulligan-left">2</span> 次)</button>
+          <button onclick="confirmMulligan()">✅ 确认手牌</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">物资 / 牌库 / 弃牌堆</div>
+        <div id="piles-area">
+          <div class="pile-box">
+            <div class="pile-label">物资牌堆</div>
+            <div class="pile-cards" id="supply-pile"></div>
+          </div>
+          <div class="pile-box">
+            <div class="pile-label">牌库</div>
+            <div class="pile-cards">
+              <div class="pile-card back" id="deck-pile"></div>
+            </div>
+          </div>
+          <div class="pile-box">
+            <div class="pile-label">弃牌堆</div>
+            <div class="pile-cards" id="discard-pile"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="skill-section" style="display:none;">
+        <div class="section-title">⚡ 战术技能 - 点击物资牌堆中的牌发动对应战术</div>
+        <div id="action-bar">
+          <button class="skill" onclick="activateSynergy()">🔄 协同 (弃2张同点数)</button>
+          <button class="danger" onclick="cancelSkill()">❌ 取消</button>
+        </div>
+      </div>
+
+      <div id="message"></div>
+      <div id="action-bar">
+        <button onclick="showSkillPanel()">⚡ 发动战术</button>
+        <button onclick="showRules()">📖 规则说明</button>
+        <button class="danger" onclick="resetGame()">🔄 重新开始</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 弹窗 -->
+  <div id="modal-overlay">
+    <div id="modal">
+      <h2 id="modal-title">标题</h2>
+      <p id="modal-text">内容</p>
+      <div id="modal-extra"></div>
+      <button onclick="closeModal()">确定</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
