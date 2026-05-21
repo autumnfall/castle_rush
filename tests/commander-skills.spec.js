@@ -85,10 +85,13 @@ test.describe('新手指挥官', () => {
 
   test('♣️ 强攻：确认后击败1张明置敌人', async ({ page }) => {
     acceptDialogs(page);
-    const e1 = makeEnemy('hearts', 5, 4, 0, 1, true);
     await patchGameState(page, {
       supply: [makeCard('clubs', 3)],
-      enemies: [e1],
+      enemies: [
+        makeEnemy('hearts', 5, 4, 0, 1, true),
+        makeEnemy('clubs', 7, 4, 1, 3, false),
+        makeEnemy('diamonds', 9, 4, 2, 5, false),
+      ],
     });
     await page.click('button:has-text("发动战术")');
     await clickSupplyBySuit(page, 'clubs');
@@ -127,8 +130,10 @@ test.describe('新手指挥官', () => {
     await clickSelectableEnemy(page);
     await waitForMessage(page, '防御');
     const state = await getGameState(page);
-    expect(state.handCount).toBe(0);
+    // 使用♠️防御时，手牌保留在手中，♠️物资代替手牌进入弃牌堆
+    expect(state.handCount).toBe(1);
     expect(state.discardCount).toBe(1); // ♠️进入弃牌
+    expect(state.supplyCount).toBe(0);
     expect(state.enemies[0].revealed).toBe(true);
   });
 });
@@ -525,15 +530,15 @@ test.describe('通用边界场景', () => {
     await setupCommanderGame(page, 'novice');
     await patchGameState(page, {
       supply: [makeCard('hearts', 5)],
-      hand: [makeCard('clubs', 2)],
+      hand: [makeCard('hearts', 5)],
       enemies: [makeEnemy('hearts', 5, 4, 0, 1, true)],
     });
     await page.click('button:has-text("发动战术")');
     await page.click('button:has-text("取消")');
     const state = await getGameState(page);
     expect(state.phase).toBe('playing');
-    // 验证可以正常攻城
-    await clickHandBySuit(page, 'clubs');
+    // 验证可以正常攻城（手牌和敌人匹配，攻城成功）
+    await clickHandBySuit(page, 'hearts');
     await clickSelectableEnemy(page);
     const state2 = await getGameState(page);
     expect(state2.enemies[0].defeated).toBe(true);

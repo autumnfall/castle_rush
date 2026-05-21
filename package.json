@@ -2,6 +2,7 @@
   "name": "castle-rush",
   "version": "1.0.0",
   "description": "城堡突袭 - 网页卡牌游戏",
+  "type": "module",
   "scripts": {
     "start": "./start.sh",
     "stop": "./stop.sh",
@@ -10,5 +11,8 @@
   },
   "dependencies": {
     "playwright": "^1.60.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
   }
 }
