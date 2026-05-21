@@ -25,6 +25,8 @@ function renderAll() {
 
 // ==================== 将共享函数挂载到 window ====================
 window.renderAll = renderAll;
+window.renderEnemies = Board.renderEnemies;
+window.renderHand = Board.renderHand;
 window.setMessage = UI.setMessage;
 window.updateCommanderBar = UI.updateCommanderBar;
 window.showModal = UI.showModal;

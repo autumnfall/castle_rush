@@ -4,7 +4,9 @@
   "description": "城堡突袭 - 网页卡牌游戏",
   "scripts": {
     "start": "./start.sh",
-    "stop": "./stop.sh"
+    "stop": "./stop.sh",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui"
   },
   "dependencies": {
     "playwright": "^1.60.0"
