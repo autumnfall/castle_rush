@@ -267,7 +267,7 @@ export const COMMANDERS = {
   },
 
   tactician: {
-    name: '谨慎的战术大师',
+    name: '战术大师',
     icon: '♠️',
     hand: 3, supply: 3, mulligan: 2,
     desc: '物资丰富，精于计算，战争艺术变化多端。',
