@@ -4,7 +4,12 @@ import { isSelectable } from './core.js';
 export function renderEnemies() {
   const board = document.getElementById('board-area');
   board.innerHTML = '';
-  const cardW = 72, gap = 18, baseX = 30, baseY = 0, stepY = 52;
+  const style = getComputedStyle(document.documentElement);
+  const cardW = parseInt(style.getPropertyValue('--board-card-w')) || 72;
+  const gap = parseInt(style.getPropertyValue('--board-gap')) || 18;
+  const baseX = parseInt(style.getPropertyValue('--board-base-x')) || 30;
+  const stepY = parseInt(style.getPropertyValue('--board-step-y')) || 52;
+  const baseY = 0;
 
   for (const enemy of window.gameState.enemies) {
     if (enemy.defeated) continue;
