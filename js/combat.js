@@ -96,50 +96,46 @@ export function askDefenseTactician(handCard, enemy, defense, isSuccess = false)
       finishAttack();
       return;
     }
-    const options = [];
-    if (uniqueSuits >= 2) options.push('1. 选择一个可选中暗置敌人变为明置');
-    if (uniqueSuits >= 3) options.push('2. 抽一张牌');
-    if (uniqueSuits >= 4) options.push('3. 选择一个可选中暗置敌人变为明置并抽一张牌');
-    const input = prompt(`♠️ 战争艺术发动！用♠️${rankName(defense.rank)}代替手牌。\n物资花色${uniqueSuits}种，请选择额外效果：\n${options.join('\n')}`);
-    const choice = parseInt(input);
-    const darkSelectable = window.gameState.enemies.filter(e => !e.defeated && !e.revealed && e.coveredBy.length === 0);
-    if (choice === 1 && uniqueSuits >= 2) {
-      if (darkSelectable.length === 0) {
-        window.setMessage('♠️ 战争艺术：没有可选中的暗置敌人，无额外效果。');
-        finishAttack();
-        return;
-      }
-      window.gameState._tacticianBonusMode = 'reveal';
-      window.gameState.phase = 'skill'; window.gameState.skillMode = 'tactician_bonus';
-      window.setMessage('♠️ 战争艺术：选择一个可选中暗置敌人变为明置。');
-      document.getElementById('skill-section').style.display = 'block';
-      window.renderAll();
-      return;
-    } else if (choice === 2 && uniqueSuits >= 3) {
-      const drawn = draw(1);
-      if (drawn.length > 0) window.gameState.hand.push(drawn[0]);
-      window.setMessage(`♠️ 战争艺术：抽了${drawn.length > 0 ? SUIT_NAMES[drawn[0].suit] + rankName(drawn[0].rank) : '0张'}。`);
-      finishAttack();
-      return;
-    } else if (choice === 3 && uniqueSuits >= 4) {
-      if (darkSelectable.length === 0) {
-        window.setMessage('♠️ 战争艺术：没有可选中的暗置敌人，改为抽一张牌。');
+    const choices = [];
+    if (uniqueSuits >= 2) choices.push({label: '1. 翻1张暗置敌人', value: 1});
+    if (uniqueSuits >= 3) choices.push({label: '2. 抽一张牌', value: 2});
+    if (uniqueSuits >= 4) choices.push({label: '3. 翻敌人并抽牌', value: 3});
+    window.showChoiceModal('♠️ 战争艺术', `物资花色${uniqueSuits}种，请选择额外效果：`, choices, (choice) => {
+      const darkSelectable = window.gameState.enemies.filter(e => !e.defeated && !e.revealed && e.coveredBy.length === 0);
+      if (choice === 1 && uniqueSuits >= 2) {
+        if (darkSelectable.length === 0) {
+          window.setMessage('♠️ 战争艺术：没有可选中的暗置敌人，无额外效果。');
+          finishAttack();
+          return;
+        }
+        window.gameState._tacticianBonusMode = 'reveal';
+        window.gameState.phase = 'skill'; window.gameState.skillMode = 'tactician_bonus';
+        window.setMessage('♠️ 战争艺术：选择一个可选中暗置敌人变为明置。');
+        document.getElementById('skill-section').style.display = 'block';
+        window.renderAll();
+      } else if (choice === 2 && uniqueSuits >= 3) {
         const drawn = draw(1);
         if (drawn.length > 0) window.gameState.hand.push(drawn[0]);
+        window.setMessage(`♠️ 战争艺术：抽了${drawn.length > 0 ? SUIT_NAMES[drawn[0].suit] + rankName(drawn[0].rank) : '0张'}。`);
         finishAttack();
-        return;
+      } else if (choice === 3 && uniqueSuits >= 4) {
+        if (darkSelectable.length === 0) {
+          window.setMessage('♠️ 战争艺术：没有可选中的暗置敌人，改为抽一张牌。');
+          const drawn = draw(1);
+          if (drawn.length > 0) window.gameState.hand.push(drawn[0]);
+          finishAttack();
+          return;
+        }
+        window.gameState._tacticianBonusMode = 'reveal_draw';
+        window.gameState.phase = 'skill'; window.gameState.skillMode = 'tactician_bonus';
+        window.setMessage('♠️ 战争艺术：选择一个可选中暗置敌人变为明置，然后抽一张牌。');
+        document.getElementById('skill-section').style.display = 'block';
+        window.renderAll();
+      } else {
+        window.setMessage('♠️ 战争艺术：取消选择或选择了无效选项，无额外效果。');
+        finishAttack();
       }
-      window.gameState._tacticianBonusMode = 'reveal_draw';
-      window.gameState.phase = 'skill'; window.gameState.skillMode = 'tactician_bonus';
-      window.setMessage('♠️ 战争艺术：选择一个可选中暗置敌人变为明置，然后抽一张牌。');
-      document.getElementById('skill-section').style.display = 'block';
-      window.renderAll();
-      return;
-    } else {
-      window.setMessage('♠️ 战争艺术：取消选择或选择了无效选项，无额外效果。');
-      finishAttack();
-      return;
-    }
+    });
   } else {
     window.gameState.discard.push(handCard);
     if (isSuccess) {

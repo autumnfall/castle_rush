@@ -318,6 +318,7 @@ window.doMulligan = Core.doMulligan;
 window.confirmMulligan = Core.confirmMulligan;
 window.showRules = UI.showRules;
 window.closeModal = UI.closeModal;
+window.showChoiceModal = UI.showChoiceModal;
 window.isDefenseExpansion = Core.isDefenseExpansion;
 window.doTimeFlow = Core.doTimeFlow;
 window.advanceTurnPhase = Core.advanceTurnPhase;

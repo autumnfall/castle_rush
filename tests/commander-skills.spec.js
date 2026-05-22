@@ -387,11 +387,7 @@ test.describe('战术大师', () => {
   });
 
   test('♥️ 战时补给：选择按花色数量抽牌', async ({ page }) => {
-    page.on('dialog', async dialog => {
-      if (dialog.message().includes('战时补给')) await dialog.accept();
-      else if (dialog.type() === 'prompt') await dialog.accept('A');
-      else await dialog.accept();
-    });
+    acceptDialogs(page);
     await patchGameState(page, {
       supply: [makeCard('hearts', 5), makeCard('clubs', 2), makeCard('diamonds', 3)], // 3种花色
       hand: [],
@@ -399,6 +395,8 @@ test.describe('战术大师', () => {
     });
     await page.click('button:has-text("发动战术")');
     await clickSupplyBySuit(page, 'hearts');
+    await page.waitForSelector('#modal-overlay.show');
+    await page.locator('#modal-extra button', { hasText: '按花色' }).click();
     const state = await getGameState(page);
     expect(state.handCount).toBe(3); // 3种花色抽3张
   });
@@ -437,11 +435,7 @@ test.describe('战术大师', () => {
   });
 
   test('♠️ 战争艺术：失败时根据物资花色数选择额外效果', async ({ page }) => {
-    page.on('dialog', async dialog => {
-      if (dialog.message().includes('战争艺术')) await dialog.accept();
-      else if (dialog.type() === 'prompt') await dialog.accept('2'); // 3种花色选择选项2：抽一张牌
-      else await dialog.accept();
-    });
+    acceptDialogs(page);
     await patchGameState(page, {
       hand: [makeCard('clubs', 2)],
       supply: [makeCard('spades', 8), makeCard('hearts', 5), makeCard('diamonds', 3)], // 3种花色（使用♠️前统计）
@@ -450,9 +444,11 @@ test.describe('战术大师', () => {
     });
     await clickHandBySuit(page, 'clubs');
     await clickSelectableEnemy(page);
+    await page.waitForSelector('#modal-overlay.show');
+    await page.locator('#modal-extra button', { hasText: '抽一张牌' }).click();
     await waitForMessage(page, '战争艺术');
     const state = await getGameState(page);
-    expect(state.handCount).toBe(1); // 抽1张
+    expect(state.handCount).toBe(2); // 原手牌保留 + 抽1张
   });
 });
 

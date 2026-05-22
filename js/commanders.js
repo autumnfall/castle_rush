@@ -275,13 +275,17 @@ export const COMMANDERS = {
       const uniqueSuits = new Set(window.gameState.supply.map(c => c.suit)).size;
       const confirmed = confirm(`是否发动 ♥️ 战时补给？\n将弃掉物资牌：♥️${rankName(card.rank)}\n当前有${uniqueSuits}种花色物资，可选择：\nA) 抽${uniqueSuits}张牌（按花色）\nB) 抽2张牌`);
       if (!confirmed) return true;
-      const choice = prompt('输入 A 或 B 选择效果：');
-      const amount = (choice && choice.toUpperCase() === 'A') ? uniqueSuits : 2;
       window.useSupplyCard(card, () => {
-        const drawn = window.draw(amount);
-        window.gameState.hand.push(...drawn);
-        window.setMessage(`♥️ 战时补给！选择了${choice && choice.toUpperCase() === 'A' ? '按花色' : '固定2张'}，抽了${drawn.length}张牌。`);
-        window.finishSkill();
+        window.showChoiceModal('♥️ 战时补给', '请选择效果：', [
+          {label: `A) 按花色抽${uniqueSuits}张`, value: 'A'},
+          {label: 'B) 固定抽2张', value: 'B'}
+        ], (choice) => {
+          const amount = choice === 'A' ? uniqueSuits : 2;
+          const drawn = window.draw(amount);
+          window.gameState.hand.push(...drawn);
+          window.setMessage(`♥️ 战时补给！选择了${choice === 'A' ? '按花色' : '固定2张'}，抽了${drawn.length}张牌。`);
+          window.finishSkill();
+        });
       });
       return true;
     },

@@ -136,6 +136,26 @@ export function closeModal() {
   document.getElementById('modal-overlay').classList.remove('show');
 }
 
+export function showChoiceModal(title, text, choices, onSelect) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-text').innerHTML = text;
+  const extra = document.getElementById('modal-extra');
+  extra.innerHTML = '';
+  choices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.textContent = choice.label;
+    btn.style.cssText = 'margin:6px;padding:8px 16px;font-size:14px;cursor:pointer;border-radius:6px;border:1px solid #555;background:#3a4a3a;color:#eee;';
+    btn.onmouseover = () => btn.style.background = '#4a5a4a';
+    btn.onmouseout = () => btn.style.background = '#3a4a3a';
+    btn.onclick = () => {
+      closeModal();
+      onSelect(choice.value);
+    };
+    extra.appendChild(btn);
+  });
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
 export function showRules() {
   const tabs = [
     { id: 'basic', label: '基础规则' },
