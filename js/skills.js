@@ -6,12 +6,14 @@ import { getCommander, COMMANDERS } from './commanders.js';
 export function showSkillPanel() {
   if (window.gameState.phase === 'mulligan' || window.gameState.phase === 'gameover') return;
   if (window.gameState.phase === 'skill') return;
-  if (window.gameState.supply.length === 0) { window.setMessage('物资牌堆为空，无法发动战术技能！'); return; }
+  if (window.gameState.supply.length === 0 && window.gameState.hand.length < 2) { window.setMessage('物资牌堆为空且手牌不足2张，无法发动战术技能！'); return; }
   window.gameState.phase = 'skill';
   window.gameState.skillMode = 'select_supply';
   window.gameState.selectedSupply = null;
   document.getElementById('skill-section').style.display = 'block';
-  window.setMessage('点击物资牌堆中的牌发动对应战术，或选择协同/取消。');
+  window.setMessage(window.gameState.supply.length === 0
+    ? '物资牌堆为空，只能选择协同或取消。'
+    : '点击物资牌堆中的牌发动对应战术，或选择协同/取消。');
   window.renderAll();
 }
 

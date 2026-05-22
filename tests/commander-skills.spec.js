@@ -574,10 +574,11 @@ test.describe('通用边界场景', () => {
     expect(state2.enemies[0].defeated).toBe(true);
   });
 
-  test('物资为空时无法发动战术', async ({ page }) => {
+  test('物资为空且手牌不足2张时无法发动战术', async ({ page }) => {
     await setupCommanderGame(page, 'novice');
     await patchGameState(page, {
       supply: [],
+      hand: [makeCard('hearts', 5)],
     });
     await page.click('button:has-text("发动战术")');
     const msg = await getMessage(page);
