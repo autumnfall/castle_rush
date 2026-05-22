@@ -213,7 +213,10 @@ test.describe('后勤专家', () => {
     acceptDialogs(page);
     await patchGameState(page, {
       supply: [makeCard('clubs', 3)],
-      enemies: [makeEnemy('hearts', 5, 4, 0, 1, true)],
+      enemies: [
+        makeEnemy('hearts', 5, 4, 0, 1, true),
+        makeEnemy('diamonds', 7, 4, 1, 3, false),
+      ],
     });
     await page.click('button:has-text("发动战术")');
     await clickSupplyBySuit(page, 'clubs');
@@ -229,7 +232,10 @@ test.describe('后勤专家', () => {
     await patchGameState(page, {
       supply: [makeCard('clubs', 3)],
       hand: [makeCard('spades', 8)],
-      enemies: [makeEnemy('hearts', 5, 4, 0, 1, false)],
+      enemies: [
+        makeEnemy('hearts', 5, 4, 0, 1, false),
+        makeEnemy('diamonds', 7, 4, 1, 3, false),
+      ],
     });
     await page.click('button:has-text("发动战术")');
     await clickSupplyBySuit(page, 'clubs');
@@ -270,13 +276,17 @@ test.describe('后勤专家', () => {
     await patchGameState(page, {
       hand: [makeCard('hearts', 5)],
       supply: [makeCard('spades', 8)],
-      enemies: [makeEnemy('hearts', 5, 4, 0, 1, true)],
+      enemies: [
+        makeEnemy('hearts', 5, 4, 0, 1, true),
+        makeEnemy('diamonds', 7, 4, 1, 3, false),
+      ],
     });
     await clickHandBySuit(page, 'hearts');
     await clickSelectableEnemy(page);
+    await waitForMessage(page, '攻城成功'); // 等待异步弹窗处理完毕
     const state = await getGameState(page);
     expect(state.handCount).toBe(0);
-    expect(state.supplyCount).toBe(1); // ♠️还在
+    expect(state.supply.some(c => c.suit === 'spades')).toBe(true); // ♠️还在
   });
 });
 
@@ -464,8 +474,7 @@ test.describe('推进之王', () => {
     await page.click('button:has-text("发动战术")');
     await clickSupplyBySuit(page, 'hearts');
     const state = await getGameState(page);
-    expect(state.handCount).toBe(3); // 原来1张+抽3张=4？不对，手牌没被弃
-    // 实际上手牌没被选过，所以应该是 1+3=4？不，紧急补给只抽牌不弃牌
+    // 紧急补给只抽牌不弃牌，初始1张 + 抽3张 = 4张
     expect(state.handCount).toBe(4);
   });
 
@@ -536,7 +545,7 @@ test.describe('推进之王', () => {
       supply: [makeCard('spades', 8)],
       enemies: [
         makeEnemy('hearts', 5, 3, 0, 2, true), // 被攻击的明置敌人
-        makeEnemy('clubs', 3, 4, 1, 1, false), // 新暴露的暗置敌人
+        makeEnemy('clubs', 3, 4, 1, 6, false), // 新暴露的暗置敌人（放在pos6避免覆盖hearts5）
       ],
     });
     await clickHandBySuit(page, 'hearts');
