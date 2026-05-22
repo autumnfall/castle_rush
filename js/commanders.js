@@ -8,10 +8,10 @@ export const COMMANDERS = {
     hand: 5, supply: 2, mulligan: 2,
     desc: '标准基础规则，适合入门练习。',
     skillDesc: {
-      hearts: '♥️ 补给：抽3张牌',
-      diamonds: '♦️ 侦查：翻至多2张暗置牌',
-      clubs: '♣️ 强攻：击败1张明置敌人',
-      spades: '♠️ 防御：代替手牌进入弃牌堆'
+      hearts: '♥️ 补给：从牌堆抽3张牌加入手牌',
+      diamonds: '♦️ 侦查：选择至多2张可选中的暗置牌翻为明置',
+      clubs: '♣️ 强攻：选择1张明置敌人，直接击败并获得奖励',
+      spades: '♠️ 防御：手牌需要进入弃牌堆时，可代替原手牌进入弃牌堆'
     },
     // 技能执行函数返回true表示技能已完成，false表示进入子模式
     onSkillHearts: (card) => {
@@ -87,10 +87,10 @@ export const COMMANDERS = {
     hand: 5, supply: 2, mulligan: 2,
     desc: '物资充裕时补给更多，擅长持久作战。',
     skillDesc: {
-      hearts: '♥️ 临时补给：物资≥3时抽3张，否则抽2张',
-      diamonds: '♦️ 优势侦查：手牌≥5时翻2张，否则翻1张',
-      clubs: '♣️ 火力压制：击败明置敌人，或弃1张手牌击败暗置敌人',
-      spades: '♠️ 攻城增援：攻城成功时，可消耗1张♠️物资抽2张手牌'
+      hearts: '♥️ 临时补给：物资不小于3时抽3张，否则抽2张',
+      diamonds: '♦️ 优势侦查：手牌不小于5时翻至多2张暗置敌人，否则翻1张',
+      clubs: '♣️ 火力压制：直接击败1张明置敌人；或弃1张手牌击败1张暗置敌人',
+      spades: '♠️ 攻城增援：攻城成功时，抽2张手牌'
     },
     onSkillHearts: (card) => {
       const amount = window.gameState.supply.length >= 3 ? 3 : 2;
@@ -188,10 +188,10 @@ export const COMMANDERS = {
     hand: 4, supply: 2, mulligan: 2,
     desc: '擅长侦查和窃取资源，渗透打击出其不意。',
     skillDesc: {
-      hearts: '♥️ 窃取补给：抽1张，每有1张明置敌人再抽1张',
-      diamonds: '♦️ 广域侦查：翻至多3张暗置牌',
-      clubs: '♣️ 渗透打击：用明置敌人对另一敌人攻城',
-      spades: '♠️ 佯攻：攻城失败时代替手牌，可调换明暗'
+      hearts: '♥️ 窃取补给：抽1张牌，每有1张明置敌人再抽1张',
+      diamonds: '♦️ 广域侦查：选择至多3个可选中的暗置敌人翻为明置',
+      clubs: '♣️ 渗透打击：选择1张明置敌人作为武器攻击另一敌人。成功则武器保留原位，获得目标为物资；失败则武器被弃掉，目标若暗置则明置',
+      spades: '♠️ 佯攻：攻城失败时，代替原手牌进入弃牌堆。然后将1张明置敌人变暗置，再将1张可选中的暗置敌人变明置'
     },
     onSkillHearts: (card) => {
       const revealedCount = window.gameState.enemies.filter(e => e.revealed && !e.defeated).length;
@@ -266,10 +266,10 @@ export const COMMANDERS = {
     hand: 3, supply: 3, mulligan: 2,
     desc: '物资丰富，精于计算，战争艺术变化多端。',
     skillDesc: {
-      hearts: '♥️ 战时补给：每有一种花色物资抽1张，或抽2张',
-      diamonds: '♦️ 谨慎侦查：翻暗置牌，弃牌堆顶，花色一致可重复',
-      clubs: '♣️ 收割：击败明置敌人，可弃掉从牌库抽牌替换物资',
-      spades: '♠️ 战争艺术：代替手牌，按物资花色数获得额外效果'
+      hearts: '♥️ 战时补给：选择一项：按物资花色种类数抽牌，或固定抽2张',
+      diamonds: '♦️ 谨慎侦查：选择1个暗置敌人翻为明置，弃牌堆顶1张牌。花色一致可重复；不一致可用1张物资与刚弃掉的牌堆顶牌交换',
+      clubs: '♣️ 收割：击败1张明置敌人，可将其弃掉，从牌库顶抽1张牌替换为物资',
+      spades: '♠️ 战争艺术：手牌进入弃牌堆时，可代替原手牌进入弃牌堆。然后根据物资花色数选择：2种翻1张暗置，3种抽1张牌，4种同时执行'
     },
     onSkillHearts: (card) => {
       const uniqueSuits = new Set(window.gameState.supply.map(c => c.suit)).size;
@@ -348,10 +348,10 @@ export const COMMANDERS = {
     hand: 4, supply: 2, mulligan: 2,
     desc: '攻势凌厉，擅长连锁推进和战场扰乱。',
     skillDesc: {
-      hearts: '♥️ 紧急补给：手牌≤3时抽3张，否则抽2张',
-      diamonds: '♦️ 扰乱侦查：交换敌人位置并翻转明暗',
-      clubs: '♣️ 推进：击败明置敌人，可连锁击败新暴露敌人',
-      spades: '♠️ 突破战术：攻城成功时代替手牌，可翻一张新敌人'
+      hearts: '♥️ 紧急补给：手牌不大于3时抽3张，否则抽2张',
+      diamonds: '♦️ 扰乱侦查：选择1张覆盖暗置敌人的可选中牌作为源，与被源覆盖的暗置敌人交换位置。交换后源若被覆盖则变暗置（抽1张），目标若不再被覆盖则变明置',
+      clubs: '♣️ 推进：击败1张明置敌人。若产生新的可选中敌人，可再消耗1张非♣️物资连锁击败（不获得奖励）',
+      spades: '♠️ 突破战术：攻城成功时，代替原手牌进入弃牌堆。若击败后产生新的可选中敌人，可立即将其中1张翻为明置'
     },
     onSkillHearts: (card) => {
       const amount = window.gameState.hand.length <= 3 ? 3 : 2;
