@@ -25,9 +25,14 @@ export function finishAttack() {
   window.gameState.selectedHand = null;
   const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
   if (isDef) {
-    // 城防扩展：标记本阶段已攻城，不自动推进阶段
+    // 城防扩展：标记本阶段已攻城，若无可再做之事则自动推进阶段
     window.gameState.phaseActions = window.gameState.phaseActions || {};
     window.gameState.phaseActions.attack = true;
+    const hasClubs = !window.gameState.phaseActions.clubsSkill && window.gameState.supply.some(c => c.suit === 'clubs');
+    if (!hasClubs) {
+      Core.advanceTurnPhase();
+      return;
+    }
   } else {
     window.gameState.turn++;
   }

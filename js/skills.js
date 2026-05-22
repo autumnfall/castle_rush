@@ -91,19 +91,28 @@ export function finishSkill() {
   window.gameState._tacticianBonusMode = undefined;
   window.gameState._feintDarkened = undefined;
   document.getElementById('skill-section').style.display = 'none';
-  // 城防扩展：标记本阶段已使用对应技能，不自动推进阶段
+  // 城防扩展：标记本阶段已使用对应技能，若无可再做之事则自动推进阶段
   const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
+  let shouldAdvance = false;
   if (isDef && window.gameState.turnPhase) {
     window.gameState.phaseActions = window.gameState.phaseActions || {};
     if (window.gameState.turnPhase === 'scout') {
       window.gameState.phaseActions.diamondsSkill = true;
+      shouldAdvance = true; // scout 只有 ♦️ 技能一件事
     } else if (window.gameState.turnPhase === 'siege') {
       window.gameState.phaseActions.clubsSkill = true;
+      const hasAttack = !window.gameState.phaseActions.attack && window.gameState.hand.length > 0;
+      if (!hasAttack) shouldAdvance = true;
     } else if (window.gameState.turnPhase === 'supply') {
       window.gameState.phaseActions.heartsSkill = true;
+      shouldAdvance = true; // supply 只有 ♥️ 技能一件事
     }
   }
-  window.renderAll();
+  if (shouldAdvance) {
+    Core.advanceTurnPhase();
+  } else {
+    window.renderAll();
+  }
 }
 
 // ==================== 技能子模式处理 ====================
