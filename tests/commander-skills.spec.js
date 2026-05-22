@@ -428,6 +428,7 @@ test.describe('战术大师', () => {
     await clickSupplyBySuit(page, 'clubs');
     await waitForMessage(page, '收割');
     await clickSelectableRevealedEnemy(page);
+    await waitForMessage(page, '击败了'); // 等待异步 confirm 回调完成
     const state = await getGameState(page);
     expect(state.enemies[0].defeated).toBe(true);
     expect(state.supplyCount).toBe(1); // 牌库顶牌作为新物资

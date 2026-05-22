@@ -252,18 +252,26 @@ export function handleSkillEnemySelect(enemy) {
     if (!enemy.revealed) { window.setMessage('只能选择明置的敌人！'); return; }
     if (!isSelectable(enemy)) { window.setMessage('该敌人被覆盖，无法选中！'); return; }
     enemy.defeated = true;
-    window.gameState.discard.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
-    const drawn = draw(1)[0];
-    if (drawn) {
-      window.gameState.supply.push(drawn);
-      window.setMessage(`♣️ 收割：击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，弃掉后从牌库抽到 ${SUIT_NAMES[drawn.suit]}${rankName(drawn.rank)} 作为物资。`);
-    } else {
-      window.setMessage(`♣️ 收割：击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，但牌库已空，无法获得新物资。`);
-    }
-    computeCoverage();
-    finishSkill();
-    checkGameOver();
-    window.renderAll();
+    setTimeout(() => {
+      const discardIt = confirm(`是否将 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)} 弃掉，从牌库顶抽1张牌作为物资？\n（取消则将其作为普通物资）`);
+      if (discardIt) {
+        window.gameState.discard.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
+        const drawn = draw(1)[0];
+        if (drawn) {
+          window.gameState.supply.push(drawn);
+          window.setMessage(`♣️ 收割：击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，弃掉后从牌库抽到 ${SUIT_NAMES[drawn.suit]}${rankName(drawn.rank)} 作为物资。`);
+        } else {
+          window.setMessage(`♣️ 收割：击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，但牌库已空。`);
+        }
+      } else {
+        window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
+        window.setMessage(`♣️ 收割：击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，将其作为物资。`);
+      }
+      computeCoverage();
+      finishSkill();
+      checkGameOver();
+      window.renderAll();
+    }, 100);
     return;
   }
 
@@ -540,11 +548,7 @@ export function showSynergyChoice() {
     { suit: 'diamonds', label: '♦️ 侦查 (翻2张)' },
     { suit: 'clubs', label: '♣️ 强攻 (击败明置)' }
   ];
-  const options = choices.map((c, i) => `${i+1}. ${c.label}`).join('\n');
-  const input = prompt('协同成功！请选择要发动的技能：\n' + options);
-  const choice = parseInt(input);
-  if (choice >= 1 && choice <= 3) {
-    const suit = choices[choice - 1].suit;
+  window.showChoiceModal('🔄 协同成功', '请选择要发动的技能：', choices, (suit) => {
     const idxs = window.gameState.synergyCards.map(c => c.idx).sort((a, b) => b - a);
     for (const i of idxs) window.gameState.discard.push(window.gameState.hand.splice(i, 1)[0]);
     window.gameState.synergyCards = [];
@@ -583,11 +587,5 @@ export function showSynergyChoice() {
       window.setMessage('🔄 协同♣️ 强攻！点击一个明置的敌人牌直接击败。');
       window.renderAll();
     }
-  } else {
-    window.setMessage('取消协同。');
-    window.gameState.synergyCards = [];
-    window.gameState.phase = 'playing';
-    document.getElementById('skill-section').style.display = 'none';
-    window.renderAll();
-  }
+  });
 }

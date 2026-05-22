@@ -215,28 +215,27 @@ export function askAttritionDefense(handCard, enemy, defense) {
     }
     let msg = '♠️ 修整战术发动！';
     if (temp.length > 0) {
-      const options = temp.map((c, i) => `${i+1}. ${SUIT_NAMES[c.suit]}${rankName(c.rank)}`).join('\n');
-      const input = prompt(`从牌库查看${temp.length}张牌，选择1张加入手牌（输入编号，取消则都不选）：\n${options}`);
-      const choice = parseInt(input);
-      if (choice >= 1 && choice <= temp.length) {
-        window.gameState.hand.push(temp[choice - 1]);
-        msg += `选择了${SUIT_NAMES[temp[choice-1].suit]}${rankName(temp[choice-1].rank)}加入手牌。`;
-        // 其余按 reverse 顺序放回牌库顶
-        for (let i = temp.length - 1; i >= 0; i--) {
-          if (i !== choice - 1) {
+      const choices = temp.map((c, i) => ({label: `${i+1}. ${SUIT_NAMES[c.suit]}${rankName(c.rank)}`, value: i}));
+      choices.push({label: '取消（都不选）', value: -1});
+      window.showChoiceModal('♠️ 修整战术', `从牌库查看${temp.length}张牌，选择1张加入手牌：`, choices, (choiceIdx) => {
+        if (choiceIdx >= 0) {
+          window.gameState.hand.push(temp[choiceIdx]);
+          msg += `选择了${SUIT_NAMES[temp[choiceIdx].suit]}${rankName(temp[choiceIdx].rank)}加入手牌。`;
+          for (let i = temp.length - 1; i >= 0; i--) {
+            if (i !== choiceIdx) window.gameState.deck.push(temp[i]);
+          }
+        } else {
+          msg += '没有选择牌。';
+          for (let i = temp.length - 1; i >= 0; i--) {
             window.gameState.deck.push(temp[i]);
           }
         }
-      } else {
-        msg += '没有选择牌。';
-        // 全部按 reverse 顺序放回
-        for (let i = temp.length - 1; i >= 0; i--) {
-          window.gameState.deck.push(temp[i]);
-        }
-      }
-    } else {
-      msg += '牌库已空，无法查看。';
+        window.setMessage(msg);
+        window.finishAttack();
+      });
+      return;
     }
+    msg += '牌库已空，无法查看。';
     window.setMessage(msg);
     window.finishAttack();
   } else {
