@@ -121,15 +121,17 @@ export function handleSkillEnemySelect(enemy) {
   if (window.gameState.skillMode === 'infiltrate_target') {
     if (!isSelectable(enemy)) { window.setMessage('该敌人被覆盖，无法选中！'); return; }
     const weapon = window.gameState._infiltrateWeapon;
+    if (weapon.id === enemy.id) { window.setMessage('不能选择同一个敌人作为攻击目标！'); return; }
     const success = (weapon.suit === enemy.suit) || (weapon.rank === enemy.rank);
     enemy.revealed = true;
     if (success) {
-      // 武器保留原位，目标进物资
+      // 武器保留原位且保持明置，目标进物资
       window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       enemy.defeated = true;
       window.setMessage(`🎉 渗透打击成功！${SUIT_NAMES[weapon.suit]}${rankName(weapon.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！武器保留原位。`);
     } else {
-      // 武器被弃掉，目标明置但不进物资
+      // 武器被弃掉（从场上移除进入弃牌堆），目标明置但不进物资
+      weapon.defeated = true;
       window.gameState.discard.push({ ...weapon, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       window.setMessage(`💥 渗透打击失败！${SUIT_NAMES[weapon.suit]}${rankName(weapon.rank)} 被弃掉，${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)} 已明置。`);
     }
@@ -291,6 +293,9 @@ export function handleSkillEnemySelect(enemy) {
     if (!isSelectable(enemy)) { window.setMessage('该敌人被覆盖，无法选中！'); return; }
     enemy.revealed = true;
     window.setMessage(`♠️ 突破战术：将新敌人 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)} 翻为明置。`);
+    window.gameState.phase = 'playing';
+    window.gameState.skillMode = null;
+    document.getElementById('skill-section').style.display = 'none';
     window.finishAttack();
     return;
   }
@@ -314,6 +319,9 @@ export function handleSkillEnemySelect(enemy) {
     window.gameState._feintDarkened = undefined;
     window.gameState._skipHandRemove = true;
     window.setMessage(`♠️ 佯攻：已将 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)} 翻为明置。`);
+    window.gameState.phase = 'playing';
+    window.gameState.skillMode = null;
+    document.getElementById('skill-section').style.display = 'none';
     window.finishAttack();
     return;
   }
@@ -333,6 +341,9 @@ export function handleSkillEnemySelect(enemy) {
     }
     window.gameState._tacticianSuits = 0;
     window.gameState._skipHandRemove = true;
+    window.gameState.phase = 'playing';
+    window.gameState.skillMode = null;
+    document.getElementById('skill-section').style.display = 'none';
     window.finishAttack();
     return;
   }

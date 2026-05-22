@@ -34,7 +34,7 @@ export function renderEnemies() {
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'push_chain' && selectable) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'breakthrough_reveal' && selectable && !enemy.revealed) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'feint' && enemy.revealed) el.classList.add('selectable');
-    if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'feint_reveal' && selectable && !enemy.revealed) el.classList.add('selectable');
+    if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'feint_reveal' && selectable && !enemy.revealed && enemy.id !== window.gameState._feintDarkened?.id) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'tactician_bonus' && selectable && !enemy.revealed) el.classList.add('selectable');
 
     el.style.left = (baseX + enemy.pos * (cardW / 2 + gap / 2)) + 'px';

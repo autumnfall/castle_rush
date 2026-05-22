@@ -469,22 +469,47 @@ test.describe('推进之王', () => {
     expect(state.handCount).toBe(4);
   });
 
-  test('♦️ 扰乱侦查：交换敌人位置并翻转明暗', async ({ page }) => {
+  test('♦️ 扰乱侦查：交换敌人位置并翻转明暗，有敌人变暗置时抽1张', async ({ page }) => {
     acceptDialogs(page);
-    const e1 = makeEnemy('hearts', 5, 4, 0, 1, true);
+    // e1: layer3 pos1 明置 — 作为源，初始可选中（上方无覆盖）
+    const e1 = makeEnemy('hearts', 5, 3, 0, 1, true);
+    // e2: layer4 pos3 暗置 — 作为目标，初始可选中
     const e2 = makeEnemy('diamonds', 7, 4, 1, 3, false);
+    // e3: layer3 pos3 明置 — 初始被 e2 覆盖，交换后被 e1(新位置)覆盖，会翻为暗置触发抽牌
+    const e3 = makeEnemy('clubs', 3, 3, 2, 3, true);
     await patchGameState(page, {
       supply: [makeCard('diamonds', 3)],
-      enemies: [e1, e2],
+      hand: [makeCard('spades', 8)],
+      deck: [makeCard('hearts', 2)],
+      enemies: [e1, e2, e3],
     });
     await page.click('button:has-text("发动战术")');
     await clickSupplyBySuit(page, 'diamonds');
     await waitForMessage(page, '扰乱侦查');
-    await clickSelectableEnemy(page); // 选源敌人
-    await clickSelectableDarkEnemy(page); // 选相邻暗置目标
+    await clickSelectableEnemy(page); // 选源 e1
+    await clickSelectableDarkEnemy(page); // 选目标 e2
     const state = await getGameState(page);
-    // 位置交换，明暗翻转
+    // 阶段恢复
     expect(state.phase).toBe('playing');
+    // 物资消耗
+    expect(state.supplyCount).toBe(0);
+    expect(state.discardCount).toBe(1);
+    // 位置交换（layer / pos / index 互换）
+    const positions = await page.evaluate(() =>
+      window.gameState.enemies.slice(0, 2).map(e => ({ pos: e.pos, layer: e.layer, index: e.index }))
+    );
+    expect(positions[0].pos).toBe(3);
+    expect(positions[0].layer).toBe(4);
+    expect(positions[0].index).toBe(1);
+    expect(positions[1].pos).toBe(1);
+    expect(positions[1].layer).toBe(3);
+    expect(positions[1].index).toBe(0);
+    // 明暗翻转：e2 从暗置变明置；e3 因被覆盖从明置变暗置
+    expect(state.enemies[0].revealed).toBe(true);  // e1 保持明置
+    expect(state.enemies[1].revealed).toBe(true);  // e2 变为明置
+    expect(state.enemies[2].revealed).toBe(false); // e3 被覆盖后翻为暗置
+    // 有敌人变暗置，抽1张牌
+    expect(state.handCount).toBe(2); // 初始1张 + 抽1张
   });
 
   test('♣️ 推进：击败明置敌人', async ({ page }) => {
