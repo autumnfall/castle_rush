@@ -25,8 +25,9 @@ export function finishAttack() {
   window.gameState.selectedHand = null;
   const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
   if (isDef) {
-    // 城防扩展：攻城阶段结束后进入补给阶段，不增加回合数
-    window.gameState.turnPhase = 'supply';
+    // 城防扩展：标记本阶段已攻城，不自动推进阶段
+    window.gameState.phaseActions = window.gameState.phaseActions || {};
+    window.gameState.phaseActions.attack = true;
   } else {
     window.gameState.turn++;
   }

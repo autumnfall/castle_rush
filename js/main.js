@@ -152,10 +152,6 @@ export function onHandCardClick(idx) {
 // ==================== 城防扩展指挥官被动技能 ====================
 export function skipPhase() {
   if (!Core.isDefenseExpansion()) return;
-  if (window.gameState.turnPhase === 'time_flow') {
-    window.setMessage('⏳ 时间流逝阶段无法跳过！');
-    return;
-  }
   Core.advanceTurnPhase();
   window.renderAll();
 }
@@ -261,6 +257,10 @@ export function onEnemyClick(enemyId) {
     // 城防扩展：白天城防限制检查
     const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
     if (isDef && window.gameState.turnPhase === 'siege') {
+      if (window.gameState.phaseActions?.attack) {
+        window.setMessage('⚔️ 本阶段已经进行过攻城，无法再次攻城！');
+        return;
+      }
       const timeDeck = window.gameState.timeDeck;
       const timeTop = timeDeck.length > 0 ? timeDeck[timeDeck.length - 1] : null;
       if (timeTop && timeTop.revealed && timeTop.suit === handCard.suit) {

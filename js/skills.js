@@ -28,12 +28,7 @@ export function cancelSkill() {
     window.setMessage('已取消，回到正常阶段。');
     const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
     if (isDef) {
-      // 城防扩展：取消后按当前所在阶段推进
-      if (window.gameState.turnPhase === 'siege') {
-        window.gameState.turnPhase = 'supply';
-      } else if (window.gameState.turnPhase === 'scout') {
-        window.gameState.turnPhase = 'siege';
-      }
+      // 城防扩展：取消后回到当前阶段，不推进
       window.renderAll();
     } else {
       window.finishAttack();
@@ -50,6 +45,20 @@ export function cancelSkill() {
 
 export function onSupplyClick(card) {
   if (window.gameState.phase !== 'skill' || window.gameState.skillMode !== 'select_supply') return;
+  // 城防扩展：阶段行为次数限制
+  const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
+  if (isDef) {
+    window.gameState.phaseActions = window.gameState.phaseActions || {};
+    if (card.suit === 'diamonds' && window.gameState.phaseActions.diamondsSkill) {
+      window.setMessage('🕵️ 本阶段已经使用过♦️技能！'); return;
+    }
+    if (card.suit === 'clubs' && window.gameState.phaseActions.clubsSkill) {
+      window.setMessage('⚔️ 本阶段已经使用过♣️技能！'); return;
+    }
+    if (card.suit === 'hearts' && window.gameState.phaseActions.heartsSkill) {
+      window.setMessage('📦 本阶段已经使用过♥️技能！'); return;
+    }
+  }
   const cmd = getCommander() || COMMANDERS.novice;
   if (card.suit === 'hearts') {
     const done = cmd.onSkillHearts(card);
@@ -82,21 +91,16 @@ export function finishSkill() {
   window.gameState._tacticianBonusMode = undefined;
   window.gameState._feintDarkened = undefined;
   document.getElementById('skill-section').style.display = 'none';
-  // 城防扩展：根据技能花色推进阶段
+  // 城防扩展：标记本阶段已使用对应技能，不自动推进阶段
   const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
   if (isDef && window.gameState.turnPhase) {
-    //  hearts → supply结束后进入下一回合
-    //  diamonds → scout结束后进入 siege
-    //  clubs → siege结束后进入 supply
-    //  spades 被动技能不经过 finishSkill
+    window.gameState.phaseActions = window.gameState.phaseActions || {};
     if (window.gameState.turnPhase === 'scout') {
-      window.gameState.turnPhase = 'siege';
+      window.gameState.phaseActions.diamondsSkill = true;
     } else if (window.gameState.turnPhase === 'siege') {
-      window.gameState.turnPhase = 'supply';
+      window.gameState.phaseActions.clubsSkill = true;
     } else if (window.gameState.turnPhase === 'supply') {
-      window.gameState.turnPhase = 'time_flow';
-      window.gameState.turn++;
-      window.doTimeFlow();
+      window.gameState.phaseActions.heartsSkill = true;
     }
   }
   window.renderAll();

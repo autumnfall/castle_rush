@@ -71,7 +71,8 @@ export function initGame() {
     // 城防扩展字段
     turnPhase: defenseMode ? 'time_flow' : null,
     timeDeck: [],
-    reshuffleCount: 0
+    reshuffleCount: 0,
+    phaseActions: {}
   };
 
   computeCoverage();
@@ -205,16 +206,17 @@ export function advanceTurnPhase() {
   const phases = ['time_flow', 'scout', 'siege', 'supply'];
   const idx = phases.indexOf(window.gameState.turnPhase);
   if (idx < 0) return;
+  window.gameState.phaseActions = {};
   if (idx < phases.length - 1) {
     window.gameState.turnPhase = phases[idx + 1];
     const phaseMessages = { scout: '🕵️ 侦查阶段：可使用♦️技能', siege: '⚔️ 攻城阶段：可攻城或使用♣️技能', supply: '📦 补给阶段：可使用♥️技能' };
     window.setMessage(phaseMessages[window.gameState.turnPhase] || window.gameState.message);
   } else {
-    // supply 结束 → 下一回合
-    window.gameState.turnPhase = 'time_flow';
+    // supply 结束 → 下一回合，自动执行时间流逝并进入 scout
     window.gameState.turn++;
     doTimeFlow();
-    window.setMessage(`⏳ 第${window.gameState.turn}回合开始 - 时间流逝阶段`);
+    window.gameState.turnPhase = 'scout';
+    window.setMessage(`⏳ 第${window.gameState.turn}回合开始 - 🕵️ 侦查阶段：可使用♦️技能`);
   }
   window.renderAll();
 }

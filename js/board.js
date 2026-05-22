@@ -25,7 +25,14 @@ export function renderEnemies() {
     }
 
     const selectable = isSelectable(enemy);
-    if (selectable && window.gameState.phase === 'playing') el.classList.add('selectable');
+    if (selectable && window.gameState.phase === 'playing') {
+      const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
+      if (isDef && window.gameState.turnPhase === 'siege' && window.gameState.phaseActions?.attack) {
+        // 城防扩展：siege 阶段已攻城，敌人不再可点击
+      } else {
+        el.classList.add('selectable');
+      }
+    }
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'reveal' && selectable && !enemy.revealed) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'attack' && selectable && enemy.revealed) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'assault_dark' && selectable && !enemy.revealed) el.classList.add('selectable');
