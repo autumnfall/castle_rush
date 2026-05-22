@@ -26,7 +26,18 @@ export function cancelSkill() {
     window.gameState.skillMode = null;
     document.getElementById('skill-section').style.display = 'none';
     window.setMessage('已取消，回到正常阶段。');
-    window.finishAttack();
+    const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
+    if (isDef) {
+      // 城防扩展：取消后按当前所在阶段推进
+      if (window.gameState.turnPhase === 'siege') {
+        window.gameState.turnPhase = 'supply';
+      } else if (window.gameState.turnPhase === 'scout') {
+        window.gameState.turnPhase = 'siege';
+      }
+      window.renderAll();
+    } else {
+      window.finishAttack();
+    }
     return;
   }
   window.gameState.phase = 'playing';
@@ -71,6 +82,23 @@ export function finishSkill() {
   window.gameState._tacticianBonusMode = undefined;
   window.gameState._feintDarkened = undefined;
   document.getElementById('skill-section').style.display = 'none';
+  // 城防扩展：根据技能花色推进阶段
+  const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
+  if (isDef && window.gameState.turnPhase) {
+    //  hearts → supply结束后进入下一回合
+    //  diamonds → scout结束后进入 siege
+    //  clubs → siege结束后进入 supply
+    //  spades 被动技能不经过 finishSkill
+    if (window.gameState.turnPhase === 'scout') {
+      window.gameState.turnPhase = 'siege';
+    } else if (window.gameState.turnPhase === 'siege') {
+      window.gameState.turnPhase = 'supply';
+    } else if (window.gameState.turnPhase === 'supply') {
+      window.gameState.turnPhase = 'time_flow';
+      window.gameState.turn++;
+      window.doTimeFlow();
+    }
+  }
   window.renderAll();
 }
 
@@ -396,6 +424,72 @@ export function handleSkillEnemySelect(enemy) {
       }
     }
     window.setMessage('请选择一个可选中的暗置敌人！');
+    return;
+  }
+
+  // 闪电战专家 ♦️急速侦查
+  if (window.gameState.skillMode === 'blitzkrieg_scout') {
+    if (enemy.revealed) { window.setMessage('只能选择暗置的敌人！'); return; }
+    if (!isSelectable(enemy)) { window.setMessage('该敌人被覆盖，无法选中！'); return; }
+    enemy.revealed = true;
+    const timeTop = window.gameState.timeDeck[window.gameState.timeDeck.length - 1];
+    if (timeTop && !timeTop.revealed) {
+      const discardIt = confirm('时间牌为暗置（夜晚），是否弃掉该敌人？');
+      if (discardIt) {
+        window.gameState.discard.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
+        enemy.defeated = true;
+        window.setMessage(`♦️ 急速侦查：翻开了${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}并将其弃掉。`);
+      } else {
+        window.setMessage(`♦️ 急速侦查：翻开了${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。`);
+      }
+    } else {
+      const drawn = draw(1);
+      if (drawn.length > 0) {
+        window.gameState.hand.push(drawn[0]);
+        window.setMessage(`♦️ 急速侦查：翻开了${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，抽到${SUIT_NAMES[drawn[0].suit]}${rankName(drawn[0].rank)}。`);
+        if (timeTop && timeTop.revealed) {
+          const swap = confirm(`是否用抽到的${SUIT_NAMES[drawn[0].suit]}${rankName(drawn[0].rank)}与当前明置时间牌${SUIT_NAMES[timeTop.suit]}${rankName(timeTop.rank)}交换？`);
+          if (swap) {
+            const handIdx = window.gameState.hand.findIndex(c => c.id === drawn[0].id);
+            if (handIdx >= 0) {
+              window.gameState.hand[handIdx] = timeTop;
+              window.gameState.timeDeck[window.gameState.timeDeck.length - 1] = drawn[0];
+              drawn[0].revealed = true;
+              window.setMessage(`♦️ 急速侦查：已用${SUIT_NAMES[drawn[0].suit]}${rankName(drawn[0].rank)}替换了时间牌。`);
+            }
+          }
+        }
+      } else {
+        window.setMessage(`♦️ 急速侦查：翻开了${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，但牌库已空。`);
+      }
+    }
+    computeCoverage();
+    finishSkill();
+    checkGameOver();
+    window.renderAll();
+    return;
+  }
+
+  // 闪电战专家 ♣️突袭
+  if (window.gameState.skillMode === 'blitzkrieg_assault') {
+    if (!enemy.revealed) { window.setMessage('只能选择明置的敌人！'); return; }
+    if (!isSelectable(enemy)) { window.setMessage('该敌人被覆盖，无法选中！'); return; }
+    window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
+    enemy.defeated = true;
+    const timeCount = window.gameState.timeDeck.length;
+    let msg = `♣️ 突袭：直接击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`;
+    if (timeCount <= 5) {
+      const drawn = draw(1);
+      if (drawn.length > 0) {
+        window.gameState.hand.push(drawn[0]);
+        msg += ` 时间牌堆${timeCount}张≤5，抽了${SUIT_NAMES[drawn[0].suit]}${rankName(drawn[0].rank)}。`;
+      }
+    }
+    window.setMessage(msg);
+    computeCoverage();
+    finishSkill();
+    checkGameOver();
+    window.renderAll();
     return;
   }
 }

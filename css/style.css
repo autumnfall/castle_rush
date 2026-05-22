@@ -22,6 +22,32 @@ h2 { font-size: 20px; margin-bottom: 12px; color: #ffd700; text-align: center; }
 #info-bar span { color: #ccc; }
 #info-bar b { color: #fff; }
 
+#defense-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.25);
+  border-radius: 8px;
+  padding: 6px 12px;
+}
+#defense-bar span { color: #ccc; }
+#defense-bar #phase-display { font-weight: bold; color: #fff; }
+#defense-bar #fatigue-display b { color: #ef4444; }
+#btn-skip-phase {
+  background: #4b5563;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+#btn-skip-phase:hover { background: #6b7280; }
+
 /* 模式选择 */
 #mode-select, #commander-select {
   width: 100%;

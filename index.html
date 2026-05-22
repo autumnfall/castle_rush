@@ -51,6 +51,12 @@
       <span>剩余敌人: <b id="enemy-count">16</b></span>
       <span>物资: <b id="supply-count">0</b> (♥<b id="supply-h">0</b> ♦<b id="supply-d">0</b> ♣<b id="supply-c">0</b> ♠<b id="supply-s">0</b>)</span>
     </div>
+    <div id="defense-bar" style="display:none;">
+      <span id="phase-display">⏳ 时间流逝</span>
+      <span id="time-card-display"></span>
+      <span id="fatigue-display">疲劳: <b id="fatigue-count">0</b>/2</span>
+      <button id="btn-skip-phase" onclick="skipPhase()">⏭️ 跳过阶段</button>
+    </div>
 
     <div id="commander-bar">
       <div class="cmd-title" id="cmd-title">指挥官</div>

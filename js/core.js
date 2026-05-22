@@ -1,6 +1,12 @@
 import { createCard, shuffle, LAYER_CONFIG } from './config.js';
 import { getCommander } from './commanders.js';
 
+// ==================== 城防扩展辅助 ====================
+export function isDefenseExpansion() {
+  const mode = window.gameState?.selectedMode;
+  return mode === 'defense' || mode === 'commander+defense';
+}
+
 // ==================== 初始化 ====================
 export function initGame() {
   const cmd = getCommander();
@@ -44,6 +50,7 @@ export function initGame() {
 
   const selectedMode = window.gameState.selectedMode;
   const selectedCommander = window.gameState.selectedCommander;
+  const defenseMode = selectedMode === 'defense' || selectedMode === 'commander+defense';
   window.gameState = {
     selectedMode,
     selectedCommander,
@@ -60,7 +67,11 @@ export function initGame() {
     mulliganCount: 0,
     mulliganLimit: mulliganLimit,
     turn: 1,
-    message: '请抽取初始手牌并选择是否重调'
+    message: '请抽取初始手牌并选择是否重调',
+    // 城防扩展字段
+    turnPhase: defenseMode ? 'time_flow' : null,
+    timeDeck: [],
+    reshuffleCount: 0
   };
 
   computeCoverage();
@@ -100,8 +111,15 @@ export function draw(count) {
   for (let i = 0; i < count; i++) {
     if (window.gameState.deck.length === 0) {
       if (window.gameState.discard.length === 0) break;
+      if (isDefenseExpansion() && window.gameState.reshuffleCount >= 1) {
+        window.gameState.phase = 'gameover';
+        window.showModal('💀 疲劳溃败', '牌库第二次重洗，军队疲惫不堪，你输掉了游戏。');
+        window.renderAll();
+        break;
+      }
       window.gameState.deck = shuffle([...window.gameState.discard]);
       window.gameState.discard = [];
+      if (isDefenseExpansion()) window.gameState.reshuffleCount++;
     }
     if (window.gameState.deck.length > 0) drawn.push(window.gameState.deck.pop());
   }
@@ -137,7 +155,13 @@ export function confirmMulligan() {
   document.getElementById('mulligan-bar').style.display = 'none';
   window.gameState.phase = 'playing';
   const cmdName = getCommander() ? getCommander().name : '基础规则';
-  window.setMessage(`【${cmdName}】游戏开始！点击手牌选中，再点击可选中的敌人进行攻城。`);
+  if (isDefenseExpansion()) {
+    doTimeFlow();
+    advanceTurnPhase();
+    window.setMessage(`【${cmdName}】游戏开始！${window.gameState.message}`);
+  } else {
+    window.setMessage(`【${cmdName}】游戏开始！点击手牌选中，再点击可选中的敌人进行攻城。`);
+  }
   window.renderAll();
 }
 
@@ -155,4 +179,42 @@ export function checkGameOver() {
     window.showModal('💀 失败', '手牌和物资均已耗尽，无法继续攻城。再试一次吧！');
     return;
   }
+}
+
+// ==================== 城防扩展：时间流逝 ====================
+export function doTimeFlow() {
+  if (!isDefenseExpansion()) return;
+  const td = window.gameState.timeDeck;
+  const top = td.length > 0 ? td[td.length - 1] : null;
+  if (top && top.revealed) {
+    // 有明置牌 → 翻为暗置（进入夜晚）
+    top.revealed = false;
+  } else {
+    // 无明置牌 → 从牌库抽一张明置（进入白天）
+    const drawn = draw(1);
+    if (drawn.length > 0) {
+      drawn[0].revealed = true;
+      td.push(drawn[0]);
+    }
+  }
+}
+
+// ==================== 城防扩展：阶段推进 ====================
+export function advanceTurnPhase() {
+  if (!isDefenseExpansion()) return;
+  const phases = ['time_flow', 'scout', 'siege', 'supply'];
+  const idx = phases.indexOf(window.gameState.turnPhase);
+  if (idx < 0) return;
+  if (idx < phases.length - 1) {
+    window.gameState.turnPhase = phases[idx + 1];
+    const phaseMessages = { scout: '🕵️ 侦查阶段：可使用♦️技能', siege: '⚔️ 攻城阶段：可攻城或使用♣️技能', supply: '📦 补给阶段：可使用♥️技能' };
+    window.setMessage(phaseMessages[window.gameState.turnPhase] || window.gameState.message);
+  } else {
+    // supply 结束 → 下一回合
+    window.gameState.turnPhase = 'time_flow';
+    window.gameState.turn++;
+    doTimeFlow();
+    window.setMessage(`⏳ 第${window.gameState.turn}回合开始 - 时间流逝阶段`);
+  }
+  window.renderAll();
 }

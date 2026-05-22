@@ -436,28 +436,77 @@ export const COMMANDERS = {
   }
 };
 
-// 城防扩展指挥官（预留）
+// 城防扩展指挥官
 export const DEFENSE_COMMANDERS = {
   blitzkrieg: {
     name: '闪电战专家',
     icon: '⚡',
     hand: 4, supply: 2, mulligan: 2,
     desc: '城防扩展指挥官。时间紧迫时爆发力更强。',
-    skillDesc: { hearts: '♥️急速补给', diamonds: '♦️急速侦查', clubs: '♣️突袭', spades: '♠️缓兵之计' },
-    // 实现需结合城防系统（时间牌）
-    onSkillHearts: (card) => { alert('闪电战专家需要开启城防扩展才能使用。'); return true; },
-    onSkillDiamonds: (card) => { alert('闪电战专家需要开启城防扩展才能使用。'); return true; },
-    onSkillClubs: (card) => { alert('闪电战专家需要开启城防扩展才能使用。'); return true; },
-    onSkillSpades: () => { alert('闪电战专家需要开启城防扩展才能使用。'); return true; },
+    skillDesc: {
+      hearts: '♥️急速补给：时间牌堆不大于5张时抽3张，否则抽2张',
+      diamonds: '♦️急速侦查：选择1个暗置敌人翻为明置。若时间牌为暗置可弃掉该敌人；否则抽1张牌并可与明置时间牌交换',
+      clubs: '♣️突袭：选择1张明置敌人直接击败。若时间牌堆不大于5张，再抽1张牌',
+      spades: '♠️缓兵之计：攻城成功时，代替原手牌进入弃牌堆。然后弃置时间牌堆1张暗置牌，或抽1张牌'
+    },
+    onSkillHearts: (card) => {
+      const timeCount = window.gameState.timeDeck.length;
+      const amount = timeCount <= 5 ? 3 : 2;
+      const confirmed = confirm(`是否发动 ♥️ 急速补给？\n将弃掉物资牌：♥️${rankName(card.rank)}\n当前时间牌堆${timeCount}张，抽${amount}张牌。`);
+      if (!confirmed) return true;
+      window.useSupplyCard(card, () => {
+        const drawn = window.draw(amount);
+        window.gameState.hand.push(...drawn);
+        window.setMessage(`♥️ 急速补给！时间牌堆${timeCount}张，抽了${drawn.length}张牌。`);
+        window.finishSkill();
+      });
+      return true;
+    },
+    onSkillDiamonds: (card) => {
+      const confirmed = confirm(`是否发动 ♦️ 急速侦查？\n将弃掉物资牌：♦️${rankName(card.rank)}\n效果：选择1个暗置敌人翻为明置，根据时间牌状态产生额外效果。`);
+      if (!confirmed) return true;
+      const revealables = window.gameState.enemies.filter(e => !e.defeated && !e.revealed && window.isSelectable(e));
+      if (revealables.length === 0) {
+        window.useSupplyCard(card, () => { window.setMessage('♦️ 急速侦查：没有可选中的暗置敌人。'); window.finishSkill(); });
+        return true;
+      }
+      window.useSupplyCard(card, () => {
+        window.gameState.phase = 'skill'; window.gameState.skillMode = 'blitzkrieg_scout';
+        window.setMessage('♦️ 急速侦查：选择1个暗置敌人翻为明置。');
+        window.renderAll();
+      });
+      return false;
+    },
+    onSkillClubs: (card) => {
+      const confirmed = confirm(`是否发动 ♣️ 突袭？\n将弃掉物资牌：♣️${rankName(card.rank)}\n效果：选择1张明置敌人直接击败。若时间牌堆≤5张，再抽1张牌。`);
+      if (!confirmed) return true;
+      const attackables = window.gameState.enemies.filter(e => !e.defeated && e.revealed && window.isSelectable(e));
+      if (attackables.length === 0) {
+        window.useSupplyCard(card, () => { window.setMessage('♣️ 突袭：没有可击败的明置敌人。'); window.finishSkill(); });
+        return true;
+      }
+      window.useSupplyCard(card, () => {
+        window.gameState.phase = 'skill'; window.gameState.skillMode = 'blitzkrieg_assault';
+        window.setMessage('♣️ 突袭：选择1张明置敌人直接击败。');
+        window.renderAll();
+      });
+      return false;
+    },
+    onSkillSpades: () => { alert('♠️ 缓兵之计是被动技能：攻城成功时，可代替原手牌进入弃牌堆，然后弃置暗置时间牌或抽1张牌。'); return true; },
     onAttackSuccess: (handCard, enemy) => {
+      const defense = window.gameState.supply.find(c => c.suit === 'spades');
+      if (defense) {
+        setTimeout(() => window.askBlitzkriegDefense(handCard, enemy, defense), 150);
+        return false;
+      }
       window.gameState.discard.push(handCard);
       window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       enemy.defeated = true;
-      window.setMessage(`🎉 攻城成功！`);
+      window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
       return true;
     },
     onAttackFail: (handCard, enemy) => {
-      window.setMessage(`💥 攻城失败！敌人已明置。`);
+      window.setMessage(`💥 攻城失败！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 无法攻克 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。敌人已明置。`);
       window.renderAll();
       window.gameState.discard.push(handCard);
       return true;
@@ -468,21 +517,117 @@ export const DEFENSE_COMMANDERS = {
     icon: '🛡️',
     hand: 4, supply: 3, mulligan: 2,
     desc: '城防扩展指挥官。时间越长资源越丰富。',
-    skillDesc: { hearts: '♥️长线补给', diamonds: '♦️地图勘探', clubs: '♣️歼灭', spades: '♠️修整战术' },
-    onSkillHearts: (card) => { alert('持久战专家需要开启城防扩展才能使用。'); return true; },
-    onSkillDiamonds: (card) => { alert('持久战专家需要开启城防扩展才能使用。'); return true; },
-    onSkillClubs: (card) => { alert('持久战专家需要开启城防扩展才能使用。'); return true; },
-    onSkillSpades: () => { alert('持久战专家需要开启城防扩展才能使用。'); return true; },
+    skillDesc: {
+      hearts: '♥️长线补给：抽等同于时间牌堆数量的手牌，最多5张',
+      diamonds: '♦️地图勘探：将所有可选中暗置敌人翻为明置。若翻开多于1张，抽1张牌放到时间牌堆顶；若时间牌为明置，替换原有时间牌并将其暗置',
+      clubs: '♣️歼灭：若场上存在与时间牌同花色的明置敌人，直接击败全部同花色敌人。每多击败1张，抽1张牌放到时间牌堆底',
+      spades: '♠️修整战术：攻城失败时，代替原手牌进入弃牌堆。然后从牌库查看等同于时间牌堆数量的牌，选1张加入手牌，其余放回牌库顶'
+    },
+    onSkillHearts: (card) => {
+      const timeCount = window.gameState.timeDeck.length;
+      const amount = Math.min(timeCount, 5);
+      const confirmed = confirm(`是否发动 ♥️ 长线补给？\n将弃掉物资牌：♥️${rankName(card.rank)}\n当前时间牌堆${timeCount}张，抽${amount}张牌（最多5张）。`);
+      if (!confirmed) return true;
+      window.useSupplyCard(card, () => {
+        const drawn = window.draw(amount);
+        window.gameState.hand.push(...drawn);
+        window.setMessage(`♥️ 长线补给！时间牌堆${timeCount}张，抽了${drawn.length}张牌。`);
+        window.finishSkill();
+      });
+      return true;
+    },
+    onSkillDiamonds: (card) => {
+      const confirmed = confirm(`是否发动 ♦️ 地图勘探？\n将弃掉物资牌：♦️${rankName(card.rank)}\n效果：将所有可选中暗置敌人翻为明置，可能产生额外效果。`);
+      if (!confirmed) return true;
+      window.useSupplyCard(card, () => {
+        const revealables = window.gameState.enemies.filter(e => !e.defeated && !e.revealed && window.isSelectable(e));
+        let flipped = 0;
+        for (const e of revealables) {
+          e.revealed = true;
+          flipped++;
+        }
+        window.computeCoverage();
+        let msg = `♦️ 地图勘探：翻开了${flipped}张暗置敌人。`;
+        if (flipped > 1) {
+          const drawn = window.draw(1);
+          if (drawn.length > 0) {
+            const timeTop = window.gameState.timeDeck[window.gameState.timeDeck.length - 1];
+            if (timeTop && timeTop.revealed) {
+              window.gameState.discard.push(timeTop);
+              window.gameState.timeDeck[window.gameState.timeDeck.length - 1] = drawn[0];
+              drawn[0].revealed = true;
+              msg += ` 抽到${SUIT_NAMES[drawn[0].suit]}${rankName(drawn[0].rank)}替换时间牌，原时间牌弃掉。`;
+            } else {
+              window.gameState.timeDeck.push(drawn[0]);
+              drawn[0].revealed = true;
+              msg += ` 抽到${SUIT_NAMES[drawn[0].suit]}${rankName(drawn[0].rank)}放到时间牌堆顶。`;
+            }
+          }
+        }
+        window.setMessage(msg);
+        window.finishSkill();
+        window.checkGameOver();
+        window.renderAll();
+      });
+      return true;
+    },
+    onSkillClubs: (card) => {
+      const confirmed = confirm(`是否发动 ♣️ 歼灭？\n将弃掉物资牌：♣️${rankName(card.rank)}\n效果：击败所有与时间牌同花色的明置敌人。`);
+      if (!confirmed) return true;
+      window.useSupplyCard(card, () => {
+        const timeTop = window.gameState.timeDeck[window.gameState.timeDeck.length - 1];
+        if (!timeTop) {
+          window.setMessage('♣️ 歼灭：没有时间牌，无法执行。');
+          window.finishSkill();
+          return;
+        }
+        const targets = window.gameState.enemies.filter(e => !e.defeated && e.revealed && e.suit === timeTop.suit && window.isSelectable(e));
+        if (targets.length === 0) {
+          window.setMessage(`♣️ 歼灭：场上没有${SUIT_NAMES[timeTop.suit]}花色的明置敌人。`);
+          window.finishSkill();
+          return;
+        }
+        let extraDraws = 0;
+        for (const enemy of targets) {
+          window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
+          enemy.defeated = true;
+          extraDraws++;
+        }
+        const bonusDraws = Math.max(0, extraDraws - 1);
+        let drawnCards = [];
+        for (let i = 0; i < bonusDraws; i++) {
+          const d = window.draw(1);
+          if (d.length > 0) {
+            window.gameState.timeDeck.unshift(d[0]);
+            drawnCards.push(d[0]);
+          }
+        }
+        window.computeCoverage();
+        let msg = `♣️ 歼灭：击败了${extraDraws}张${SUIT_NAMES[timeTop.suit]}敌人。`;
+        if (drawnCards.length > 0) msg += ` 多击败${drawnCards.length}张，抽了${drawnCards.length}张牌放到时间牌堆底。`;
+        window.setMessage(msg);
+        window.finishSkill();
+        window.checkGameOver();
+        window.renderAll();
+      });
+      return true;
+    },
+    onSkillSpades: () => { alert('♠️ 修整战术是被动技能：攻城失败时，可代替原手牌进入弃牌堆，然后从牌库查看牌选1张加入手牌。'); return true; },
     onAttackSuccess: (handCard, enemy) => {
       window.gameState.discard.push(handCard);
       window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       enemy.defeated = true;
-      window.setMessage(`🎉 攻城成功！`);
+      window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
       return true;
     },
     onAttackFail: (handCard, enemy) => {
-      window.setMessage(`💥 攻城失败！敌人已明置。`);
+      window.setMessage(`💥 攻城失败！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 无法攻克 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。敌人已明置。`);
       window.renderAll();
+      const defense = window.gameState.supply.find(c => c.suit === 'spades');
+      if (defense) {
+        setTimeout(() => window.askAttritionDefense(handCard, enemy, defense), 150);
+        return false;
+      }
       window.gameState.discard.push(handCard);
       return true;
     }

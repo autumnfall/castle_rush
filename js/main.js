@@ -37,6 +37,9 @@ window.finishAttack = Combat.finishAttack;
 window.askDefense = Combat.askDefense;
 window.askDefenseIntel = Combat.askDefenseIntel;
 window.askDefenseTactician = Combat.askDefenseTactician;
+window.askBlitzkriegDefense = askBlitzkriegDefense;
+window.askAttritionDefense = askAttritionDefense;
+window.skipPhase = skipPhase;
 window.draw = Core.draw;
 window.computeCoverage = Core.computeCoverage;
 window.checkGameOver = Core.checkGameOver;
@@ -146,6 +149,107 @@ export function onHandCardClick(idx) {
   Board.renderEnemies();
 }
 
+// ==================== 城防扩展指挥官被动技能 ====================
+export function skipPhase() {
+  if (!Core.isDefenseExpansion()) return;
+  if (window.gameState.turnPhase === 'time_flow') {
+    window.setMessage('⏳ 时间流逝阶段无法跳过！');
+    return;
+  }
+  Core.advanceTurnPhase();
+  window.renderAll();
+}
+
+export function askBlitzkriegDefense(handCard, enemy, defense) {
+  const useDef = confirm(`是否发动 ♠️ 缓兵之计？用♠️${rankName(defense.rank)}代替原手牌进入弃牌堆。`);
+  if (useDef) {
+    const idx = window.gameState.supply.findIndex(c => c.id === defense.id);
+    window.gameState.discard.push(window.gameState.supply.splice(idx, 1)[0]);
+    window.gameState._skipHandRemove = true;
+    const timeDeck = window.gameState.timeDeck;
+    const hasDark = timeDeck.some(t => !t.revealed);
+    let msg = '♠️ 缓兵之计发动！';
+    if (hasDark) {
+      const discardTime = confirm('是否弃置时间牌堆中1张暗置牌？（取消则抽1张牌）');
+      if (discardTime) {
+        const darkIdx = timeDeck.findIndex(t => !t.revealed);
+        if (darkIdx >= 0) {
+          const darkCard = timeDeck.splice(darkIdx, 1)[0];
+          window.gameState.discard.push(darkCard);
+          msg += '已弃置1张暗置时间牌。';
+        }
+      } else {
+        const drawn = Core.draw(1);
+        if (drawn.length > 0) {
+          window.gameState.hand.push(drawn[0]);
+          msg += `抽了${SUIT_NAMES[drawn[0].suit]}${rankName(drawn[0].rank)}。`;
+        }
+      }
+    } else {
+      const drawn = Core.draw(1);
+      if (drawn.length > 0) {
+        window.gameState.hand.push(drawn[0]);
+        msg += `抽了${SUIT_NAMES[drawn[0].suit]}${rankName(drawn[0].rank)}。`;
+      }
+    }
+    window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
+    enemy.defeated = true;
+    window.setMessage(msg);
+    window.finishAttack();
+  } else {
+    window.gameState.discard.push(handCard);
+    window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
+    enemy.defeated = true;
+    window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
+    window.finishAttack();
+  }
+}
+
+export function askAttritionDefense(handCard, enemy, defense) {
+  const useDef = confirm(`是否发动 ♠️ 修整战术？用♠️${rankName(defense.rank)}代替原手牌进入弃牌堆。`);
+  if (useDef) {
+    const idx = window.gameState.supply.findIndex(c => c.id === defense.id);
+    window.gameState.discard.push(window.gameState.supply.splice(idx, 1)[0]);
+    window.gameState._skipHandRemove = true;
+    const peekCount = window.gameState.timeDeck.length;
+    const temp = [];
+    for (let i = 0; i < peekCount; i++) {
+      if (window.gameState.deck.length === 0) break;
+      temp.push(window.gameState.deck.pop());
+    }
+    let msg = '♠️ 修整战术发动！';
+    if (temp.length > 0) {
+      const options = temp.map((c, i) => `${i+1}. ${SUIT_NAMES[c.suit]}${rankName(c.rank)}`).join('\n');
+      const input = prompt(`从牌库查看${temp.length}张牌，选择1张加入手牌（输入编号，取消则都不选）：\n${options}`);
+      const choice = parseInt(input);
+      if (choice >= 1 && choice <= temp.length) {
+        window.gameState.hand.push(temp[choice - 1]);
+        msg += `选择了${SUIT_NAMES[temp[choice-1].suit]}${rankName(temp[choice-1].rank)}加入手牌。`;
+        // 其余按 reverse 顺序放回牌库顶
+        for (let i = temp.length - 1; i >= 0; i--) {
+          if (i !== choice - 1) {
+            window.gameState.deck.push(temp[i]);
+          }
+        }
+      } else {
+        msg += '没有选择牌。';
+        // 全部按 reverse 顺序放回
+        for (let i = temp.length - 1; i >= 0; i--) {
+          window.gameState.deck.push(temp[i]);
+        }
+      }
+    } else {
+      msg += '牌库已空，无法查看。';
+    }
+    window.setMessage(msg);
+    window.finishAttack();
+  } else {
+    window.gameState.discard.push(handCard);
+    window.setMessage(`💥 攻城失败！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 无法攻克 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。敌人已明置。`);
+    window.finishAttack();
+  }
+}
+
 export function onEnemyClick(enemyId) {
   const enemy = window.gameState.enemies.find(e => e.id === enemyId);
   if (!enemy || enemy.defeated) return;
@@ -153,7 +257,33 @@ export function onEnemyClick(enemyId) {
   if (window.gameState.phase === 'playing') {
     if (window.gameState.selectedHand === null) { window.setMessage('请先选择一张手牌！'); return; }
     if (!Core.isSelectable(enemy)) { window.setMessage('该敌人被其他牌覆盖，无法选中！'); return; }
-    Combat.performAttack(window.gameState.hand[window.gameState.selectedHand], enemy);
+    const handCard = window.gameState.hand[window.gameState.selectedHand];
+    // 城防扩展：白天城防限制检查
+    const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
+    if (isDef && window.gameState.turnPhase === 'siege') {
+      const timeDeck = window.gameState.timeDeck;
+      const timeTop = timeDeck.length > 0 ? timeDeck[timeDeck.length - 1] : null;
+      if (timeTop && timeTop.revealed && timeTop.suit === handCard.suit) {
+        // 查找可弃的手牌（同花色或同点数）
+        const bypassIdx = window.gameState.hand.findIndex((c, i) => i !== window.gameState.selectedHand && (c.suit === timeTop.suit || c.rank === timeTop.rank));
+        if (bypassIdx >= 0) {
+          const bypassCard = window.gameState.hand[bypassIdx];
+          const bypass = confirm(`🏛️ 城防限制：白天不能使用 ${handCard.suit} 手牌攻城！\n是否弃掉 ${bypassCard.suit}${bypassCard.rank} 来忽略城防？`);
+          if (bypass) {
+            window.gameState.discard.push(window.gameState.hand.splice(bypassIdx, 1)[0]);
+            window.setMessage('已弃牌忽略城防，继续攻城！');
+            window.renderAll();
+          } else {
+            window.setMessage('城防限制：请选择其他花色的手牌。');
+            return;
+          }
+        } else {
+          window.setMessage('城防限制：你没有可弃的同花色/同点数手牌来忽略城防。');
+          return;
+        }
+      }
+    }
+    Combat.performAttack(handCard, enemy);
   } else if (window.gameState.phase === 'skill') {
     Skills.handleSkillEnemySelect(enemy);
   }
@@ -188,6 +318,9 @@ window.doMulligan = Core.doMulligan;
 window.confirmMulligan = Core.confirmMulligan;
 window.showRules = UI.showRules;
 window.closeModal = UI.closeModal;
+window.isDefenseExpansion = Core.isDefenseExpansion;
+window.doTimeFlow = Core.doTimeFlow;
+window.advanceTurnPhase = Core.advanceTurnPhase;
 
 document.addEventListener('DOMContentLoaded', () => {
   // 默认显示模式选择界面

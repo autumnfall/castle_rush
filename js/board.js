@@ -42,6 +42,8 @@ export function renderEnemies() {
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'push_chain' && selectable && window.gameState._pushNewIds?.includes(enemy.id)) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'breakthrough_reveal' && selectable && !enemy.revealed && window.gameState._breakthroughNewIds?.includes(enemy.id)) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'feint' && enemy.revealed) el.classList.add('selectable');
+    if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'blitzkrieg_scout' && selectable && !enemy.revealed) el.classList.add('selectable');
+    if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'blitzkrieg_assault' && selectable && enemy.revealed) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'feint_reveal' && selectable && !enemy.revealed && enemy.id !== window.gameState._feintDarkened?.id) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'tactician_bonus' && selectable && !enemy.revealed) el.classList.add('selectable');
 

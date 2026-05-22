@@ -23,7 +23,13 @@ export function finishAttack() {
   }
   window.gameState._skipHandRemove = false;
   window.gameState.selectedHand = null;
-  window.gameState.turn++;
+  const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
+  if (isDef) {
+    // 城防扩展：攻城阶段结束后进入补给阶段，不增加回合数
+    window.gameState.turnPhase = 'supply';
+  } else {
+    window.gameState.turn++;
+  }
   computeCoverage();
   checkGameOver();
   window.renderAll();

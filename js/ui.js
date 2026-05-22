@@ -41,6 +41,39 @@ export function updateInfo() {
   document.getElementById('supply-d').textContent = window.gameState.supply.filter(c => c.suit === 'diamonds').length;
   document.getElementById('supply-c').textContent = window.gameState.supply.filter(c => c.suit === 'clubs').length;
   document.getElementById('supply-s').textContent = window.gameState.supply.filter(c => c.suit === 'spades').length;
+
+  // 城防扩展信息
+  const defenseBar = document.getElementById('defense-bar');
+  if (defenseBar) {
+    const isDef = window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense';
+    defenseBar.style.display = isDef && window.gameState.phase !== 'mulligan' && window.gameState.phase !== 'gameover' ? 'flex' : 'none';
+    if (isDef) {
+      const phaseMap = { time_flow: '⏳ 时间流逝', scout: '🕵️ 侦查阶段', siege: '⚔️ 攻城阶段', supply: '📦 补给阶段' };
+      const phaseEl = document.getElementById('phase-display');
+      if (phaseEl) phaseEl.textContent = phaseMap[window.gameState.turnPhase] || '⏳ 时间流逝';
+
+      const fatigueEl = document.getElementById('fatigue-count');
+      if (fatigueEl) fatigueEl.textContent = window.gameState.reshuffleCount || 0;
+
+      const timeEl = document.getElementById('time-card-display');
+      if (timeEl) {
+        const timeDeck = window.gameState.timeDeck || [];
+        if (timeDeck.length > 0) {
+          const top = timeDeck[timeDeck.length - 1];
+          if (top.revealed) {
+            timeEl.textContent = `🌅 白天: ${SUIT_NAMES[top.suit]}${rankName(top.rank)}`;
+            timeEl.style.color = '#f59e0b';
+          } else {
+            timeEl.textContent = `🌙 夜晚`;
+            timeEl.style.color = '#60a5fa';
+          }
+        } else {
+          timeEl.textContent = '🌙 夜晚（无时间牌）';
+          timeEl.style.color = '#60a5fa';
+        }
+      }
+    }
+  }
 }
 
 export function setMessage(msg) {
@@ -99,14 +132,14 @@ export function showRules() {
   </div>`;
 
   html += `<div class="tab-content" id="tab-defense">
-    <h4>🏛️ 城防扩展（预留）</h4>
+    <h4>🏛️ 城防扩展</h4>
     <ul>
-      <li><b>时间牌</b>：每回合时间牌会明置/暗置，代表白天/夜晚。</li>
-      <li><b>城防效果</b>：白天时不能使用与时间牌同花色的手牌进行基本攻城。</li>
-      <li><b>疲劳规则</b>：牌库第二次重洗时输掉游戏。</li>
-      <li><b>回合阶段化</b>：时间流逝→侦查→攻城→补给。</li>
+      <li><b>时间牌</b>：每回合从牌库抽1张牌作为时间牌。明置=白天🌅，暗置=夜晚🌙。</li>
+      <li><b>城防限制</b>：白天时，不能使用与时间牌同花色的手牌进行基本攻城。可弃1张同花色/同点数手牌忽略限制。</li>
+      <li><b>疲劳规则</b>：牌库第二次重洗时，军队疲劳崩溃，输掉游戏。</li>
+      <li><b>回合阶段</b>：时间流逝→侦查(♦️)→攻城(♣️/基本攻城)→补给(♥️)。各阶段只能使用对应技能。</li>
+      <li><b>指挥官</b>：闪电战专家（时间紧迫时更强）和持久战专家（时间越长资源越多）。</li>
     </ul>
-    <p style="color:#888">城防扩展的完整实现将在后续版本中更新。</p>
   </div>`;
 
   showModal('📖 游戏规则', html);
