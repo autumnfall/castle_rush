@@ -29,6 +29,43 @@ export function renderPiles() {
     el.onclick = () => showDiscardModal();
     discardEl.appendChild(el);
   }
+
+  // 时间牌库
+  const timePileBox = document.getElementById('time-pile-box');
+  const timePile = document.getElementById('time-pile');
+  if (timePileBox && timePile) {
+    const isDef = window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense';
+    timePileBox.style.display = isDef && window.gameState.phase !== 'mulligan' && window.gameState.phase !== 'gameover' ? 'block' : 'none';
+    timePile.innerHTML = '';
+    const td = window.gameState.timeDeck || [];
+    if (td.length > 0) {
+      const top = td[td.length - 1];
+      const el = document.createElement('div');
+      if (top.revealed) {
+        el.className = 'pile-card';
+        if (isRed(top.suit)) el.classList.add('red');
+        el.innerHTML = `<div style="font-weight:bold">${rankName(top.rank)}</div><div>${SUIT_SYMBOLS[top.suit]}</div>`;
+      } else {
+        el.className = 'pile-card back';
+        el.textContent = '🌙';
+      }
+      timePile.appendChild(el);
+      // 牌堆数量小标记
+      const countBadge = document.createElement('div');
+      countBadge.style.cssText = 'position:absolute;bottom:-4px;right:-4px;background:#333;color:#fff;font-size:10px;border-radius:8px;padding:1px 5px;';
+      countBadge.textContent = td.length;
+      timePile.style.position = 'relative';
+      timePile.appendChild(countBadge);
+    } else {
+      const el = document.createElement('div');
+      el.className = 'pile-card back';
+      el.textContent = '?';
+      el.title = '暂无时间牌';
+      timePile.appendChild(el);
+    }
+    const timeCount = document.getElementById('time-count');
+    if (timeCount) timeCount.textContent = td.length;
+  }
 }
 
 export function updateInfo() {
