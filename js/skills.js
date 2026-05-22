@@ -53,6 +53,9 @@ export function finishSkill() {
   window.gameState.skillMode = null;
   window.gameState._revealedCount = 0;
   window.gameState._maxReveal = 0;
+  window.gameState._breakthroughNewIds = undefined;
+  window.gameState._pushNewIds = undefined;
+  window.gameState._tacticianBonusMode = undefined;
   document.getElementById('skill-section').style.display = 'none';
   window.renderAll();
 }
@@ -152,21 +155,31 @@ export function handleSkillEnemySelect(enemy) {
     window.renderEnemies();
     // 弃牌堆顶一张牌
     const top = draw(1)[0];
-    if (!top) { finishSkill(); return; }
+    if (!top) {
+      window.setMessage('牌库已空，无法继续侦查。');
+      finishSkill();
+      return;
+    }
     window.gameState.discard.push(top);
     window.setMessage(`♦️ 谨慎侦查：翻开了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，牌堆顶是 ${SUIT_NAMES[top.suit]}${rankName(top.rank)}。`);
     window.renderAll();
-    if (top.suit === enemy.suit) {
+
+    const revealables = window.gameState.enemies.filter(e => !e.defeated && !e.revealed && isSelectable(e));
+    const canContinue = revealables.length > 0 && top.suit === enemy.suit;
+
+    if (canContinue) {
       const again = confirm(`牌堆顶 ${SUIT_NAMES[top.suit]}${rankName(top.rank)} 与敌人花色一致！是否继续侦查？`);
       if (again) {
-        const revealables = window.gameState.enemies.filter(e => !e.defeated && !e.revealed && isSelectable(e));
-        if (revealables.length === 0) { window.setMessage('没有更多可选中的暗置敌人了。'); finishSkill(); }
         return; // 继续等待玩家选择下一个敌人
       }
-    } else {
-      const swap = confirm(`牌堆顶 ${SUIT_NAMES[top.suit]}${rankName(top.rank)} 与敌人花色不一致。是否用一张已有物资牌与刚弃掉的牌交换？`);
-      if (swap && window.gameState.supply.length > 0) {
-        // 简单起见，用最后一张物资交换
+    } else if (top.suit === enemy.suit && revealables.length === 0) {
+      window.setMessage('没有更多可选中的暗置敌人了。');
+    }
+
+    // 进入交换步骤：不一致、选择不继续、或没有暗置敌人
+    if (window.gameState.supply.length > 0) {
+      const swap = confirm(`♦️ 谨慎侦查：是否用一张已有物资牌与刚弃掉的牌堆顶牌 ${SUIT_NAMES[top.suit]}${rankName(top.rank)} 交换？`);
+      if (swap) {
         const sIdx = window.gameState.supply.length - 1;
         const sCard = window.gameState.supply[sIdx];
         const dIdx = window.gameState.discard.length - 1;
@@ -183,20 +196,15 @@ export function handleSkillEnemySelect(enemy) {
   if (window.gameState.skillMode === 'harvest') {
     if (!enemy.revealed) { window.setMessage('只能选择明置的敌人！'); return; }
     if (!isSelectable(enemy)) { window.setMessage('该敌人被覆盖，无法选中！'); return; }
-    const harvest = confirm(`是否将击败的 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)} 弃掉，从牌库抽一张牌替换为物资？`);
-    if (harvest) {
-      const drawn = draw(1)[0];
-      if (drawn) {
-        window.gameState.supply.push(drawn);
-        window.setMessage(`♣️ 收割：击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，弃掉后从牌库抽到 ${SUIT_NAMES[drawn.suit]}${rankName(drawn.rank)} 作为物资。`);
-      } else {
-        window.setMessage(`♣️ 收割：击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，但牌库已空，无法替换。`);
-      }
-    } else {
-      window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
-      window.setMessage(`♣️ 收割：击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，正常获得物资。`);
-    }
     enemy.defeated = true;
+    window.gameState.discard.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
+    const drawn = draw(1)[0];
+    if (drawn) {
+      window.gameState.supply.push(drawn);
+      window.setMessage(`♣️ 收割：击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，弃掉后从牌库抽到 ${SUIT_NAMES[drawn.suit]}${rankName(drawn.rank)} 作为物资。`);
+    } else {
+      window.setMessage(`♣️ 收割：击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，但牌库已空，无法获得新物资。`);
+    }
     computeCoverage();
     finishSkill();
     checkGameOver();
@@ -204,40 +212,41 @@ export function handleSkillEnemySelect(enemy) {
     return;
   }
 
-  // 扰乱侦查 - 选择可选中敌人
+  // 扰乱侦查 - 选择可选中且覆盖暗置敌人的牌
   if (window.gameState.skillMode === 'disrupt') {
     if (!isSelectable(enemy)) { window.setMessage('该敌人被覆盖，无法选中！'); return; }
+    const coversDark = window.gameState.enemies.some(other => other.id !== enemy.id && !other.defeated && !other.revealed && other.coveredBy.includes(enemy.id));
+    if (!coversDark) { window.setMessage('该敌人没有覆盖暗置敌人，无法选中！'); return; }
     window.gameState._disruptSource = enemy;
     window.gameState.skillMode = 'disrupt_target';
-    window.setMessage('♦️ 扰乱侦查：现在选择一个与其相邻的暗置敌人交换位置。');
+    window.setMessage('♦️ 扰乱侦查：现在选择被该敌人覆盖的暗置敌人交换位置。');
     window.renderAll();
     return;
   }
 
-  // 扰乱侦查 - 选择相邻暗置敌人
+  // 扰乱侦查 - 选择被源覆盖的暗置敌人
   if (window.gameState.skillMode === 'disrupt_target') {
-    if (enemy.revealed) { window.setMessage('请选择一个暗置敌人交换！'); return; }
-    if (!isSelectable(enemy)) { window.setMessage('该敌人被覆盖，无法选中！'); return; }
-    // 交换位置
     const src = window.gameState._disruptSource;
+    if (enemy.revealed) { window.setMessage('请选择一个暗置敌人交换！'); return; }
+    if (!src || !enemy.coveredBy.includes(src.id)) { window.setMessage('该敌人未被源覆盖，无法交换！'); return; }
+    // 交换位置
     const tmpPos = src.pos; src.pos = enemy.pos; enemy.pos = tmpPos;
     const tmpLayer = src.layer; src.layer = enemy.layer; enemy.layer = tmpLayer;
     const tmpIndex = src.index; src.index = enemy.index; enemy.index = tmpIndex;
     // 重新计算覆盖
     computeCoverage();
-    // 翻转明暗
-    let flippedDark = false;
-    for (const e of window.gameState.enemies) {
-      if (e.defeated) continue;
-      if (!e.revealed && isSelectable(e)) { e.revealed = true; }
-      else if (e.revealed && !isSelectable(e)) { e.revealed = false; flippedDark = true; }
+    // 翻转明暗：目标到了源位置，若 selectable 且暗置则翻明置；源到了目标位置，若明置且不可选中则翻暗置
+    if (!enemy.revealed && isSelectable(enemy)) {
+      enemy.revealed = true;
     }
-    if (flippedDark) {
+    const srcBecameDark = src.revealed && !isSelectable(src);
+    if (srcBecameDark) {
+      src.revealed = false;
       const drawn = draw(1);
       if (drawn.length > 0) window.gameState.hand.push(drawn[0]);
     }
     window.gameState._disruptSource = undefined;
-    window.setMessage(`♦️ 扰乱侦查：交换完成，翻转明暗${flippedDark ? '，有敌人变暗置，抽1张牌' : ''}。`);
+    window.setMessage(`♦️ 扰乱侦查：交换完成${srcBecameDark ? '，源变暗置，抽1张牌' : ''}。`);
     computeCoverage();
     finishSkill();
     checkGameOver();
@@ -249,15 +258,17 @@ export function handleSkillEnemySelect(enemy) {
   if (window.gameState.skillMode === 'push') {
     if (!enemy.revealed) { window.setMessage('只能选择明置的敌人！'); return; }
     if (!isSelectable(enemy)) { window.setMessage('该敌人被覆盖，无法选中！'); return; }
+    const beforeSelectableIds = new Set(window.gameState.enemies.filter(e => !e.defeated && isSelectable(e)).map(e => e.id));
     window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
     enemy.defeated = true;
     window.setMessage(`♣️ 推进：直接击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
     computeCoverage();
-    // 检查是否有新可选中敌人
-    const newOnes = window.gameState.enemies.filter(e => !e.defeated && isSelectable(e) && !e.revealed);
+    // 检查是否有新产生的可选中敌人
+    const newOnes = window.gameState.enemies.filter(e => !e.defeated && isSelectable(e) && !beforeSelectableIds.has(e.id));
     if (newOnes.length > 0) {
       const nonClub = window.gameState.supply.filter(c => c.suit !== 'clubs');
       if (nonClub.length > 0) {
+        window.gameState._pushNewIds = newOnes.map(e => e.id);
         window.gameState.skillMode = 'push_chain';
         window.setMessage(`♣️ 推进：产生了新的可选中敌人！可再消耗1张非♣️物资连锁击败（不获得奖励）。点击新敌人继续，或取消结束。`);
         window.renderAll();
@@ -273,13 +284,16 @@ export function handleSkillEnemySelect(enemy) {
   // 推进连锁
   if (window.gameState.skillMode === 'push_chain') {
     if (!isSelectable(enemy)) { window.setMessage('该敌人被覆盖，无法选中！'); return; }
+    if (!window.gameState._pushNewIds?.includes(enemy.id)) { window.setMessage('只能选择新产生的可选中敌人！'); return; }
     const nonClub = window.gameState.supply.find(c => c.suit !== 'clubs');
     if (!nonClub) { window.setMessage('没有非♣️物资可用于连锁推进。'); finishSkill(); return; }
     const idx = window.gameState.supply.findIndex(c => c.id === nonClub.id);
     window.gameState.discard.push(window.gameState.supply.splice(idx, 1)[0]);
-    window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
+    // 不获得奖励，直接弃掉
+    window.gameState.discard.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
     enemy.defeated = true;
     window.setMessage(`♣️ 推进连锁：消耗${SUIT_NAMES[nonClub.suit]}${rankName(nonClub.rank)}，击败了${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
+    window.gameState._pushNewIds = undefined;
     computeCoverage();
     finishSkill();
     checkGameOver();
@@ -291,10 +305,12 @@ export function handleSkillEnemySelect(enemy) {
   if (window.gameState.skillMode === 'breakthrough_reveal') {
     if (enemy.revealed) { window.setMessage('请选择暗置的敌人！'); return; }
     if (!isSelectable(enemy)) { window.setMessage('该敌人被覆盖，无法选中！'); return; }
+    if (!window.gameState._breakthroughNewIds?.includes(enemy.id)) { window.setMessage('只能选择新产生的可选中敌人！'); return; }
     enemy.revealed = true;
     window.setMessage(`♠️ 突破战术：将新敌人 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)} 翻为明置。`);
     window.gameState.phase = 'playing';
     window.gameState.skillMode = null;
+    window.gameState._breakthroughNewIds = undefined;
     document.getElementById('skill-section').style.display = 'none';
     window.finishAttack();
     return;
@@ -328,23 +344,31 @@ export function handleSkillEnemySelect(enemy) {
 
   // 战术大师战争艺术额外效果
   if (window.gameState.skillMode === 'tactician_bonus') {
-    const suits = window.gameState._tacticianSuits || 0;
-    if (suits >= 2 && !enemy.revealed && isSelectable(enemy)) {
+    if (!enemy.revealed && isSelectable(enemy)) {
       enemy.revealed = true;
-      window.setMessage(`♠️ 战争艺术：翻开了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。`);
-    } else if (suits >= 3) {
-      const drawn = draw(1);
-      if (drawn.length > 0) {
-        window.gameState.hand.push(drawn[0]);
-        window.setMessage(`♠️ 战争艺术：抽了 ${SUIT_NAMES[drawn[0].suit]}${rankName(drawn[0].rank)}。`);
+      if (window.gameState._tacticianBonusMode === 'reveal') {
+        window.setMessage(`♠️ 战争艺术：翻开了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。`);
+        window.gameState._tacticianBonusMode = undefined;
+        window.gameState._skipHandRemove = true;
+        window.gameState.phase = 'playing';
+        window.gameState.skillMode = null;
+        document.getElementById('skill-section').style.display = 'none';
+        window.finishAttack();
+        return;
+      } else if (window.gameState._tacticianBonusMode === 'reveal_draw') {
+        const drawn = draw(1);
+        if (drawn.length > 0) window.gameState.hand.push(drawn[0]);
+        window.setMessage(`♠️ 战争艺术：翻开了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}，并抽了${drawn.length > 0 ? SUIT_NAMES[drawn[0].suit] + rankName(drawn[0].rank) : '0张'}。`);
+        window.gameState._tacticianBonusMode = undefined;
+        window.gameState._skipHandRemove = true;
+        window.gameState.phase = 'playing';
+        window.gameState.skillMode = null;
+        document.getElementById('skill-section').style.display = 'none';
+        window.finishAttack();
+        return;
       }
     }
-    window.gameState._tacticianSuits = 0;
-    window.gameState._skipHandRemove = true;
-    window.gameState.phase = 'playing';
-    window.gameState.skillMode = null;
-    document.getElementById('skill-section').style.display = 'none';
-    window.finishAttack();
+    window.setMessage('请选择一个可选中的暗置敌人！');
     return;
   }
 }

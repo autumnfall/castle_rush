@@ -33,11 +33,14 @@ export function renderEnemies() {
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'infiltrate_target' && selectable && enemy.id !== window.gameState._infiltrateWeapon?.id) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'tactician_scout' && selectable && !enemy.revealed) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'harvest' && selectable && enemy.revealed) el.classList.add('selectable');
-    if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'disrupt' && selectable) el.classList.add('selectable');
-    if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'disrupt_target' && !enemy.revealed && enemy.id !== window.gameState._disruptSource?.id) el.classList.add('selectable');
+    const coversDark = window.gameState.enemies.some(other => other.id !== enemy.id && !other.defeated && !other.revealed && other.coveredBy.includes(enemy.id));
+    if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'disrupt' && selectable && coversDark) el.classList.add('selectable');
+    const src = window.gameState._disruptSource;
+    const coveredBySrc = src && enemy.coveredBy.includes(src.id);
+    if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'disrupt_target' && coveredBySrc && !enemy.revealed) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'push' && selectable && enemy.revealed) el.classList.add('selectable');
-    if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'push_chain' && selectable) el.classList.add('selectable');
-    if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'breakthrough_reveal' && selectable && !enemy.revealed) el.classList.add('selectable');
+    if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'push_chain' && selectable && window.gameState._pushNewIds?.includes(enemy.id)) el.classList.add('selectable');
+    if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'breakthrough_reveal' && selectable && !enemy.revealed && window.gameState._breakthroughNewIds?.includes(enemy.id)) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'feint' && enemy.revealed) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'feint_reveal' && selectable && !enemy.revealed && enemy.id !== window.gameState._feintDarkened?.id) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'tactician_bonus' && selectable && !enemy.revealed) el.classList.add('selectable');

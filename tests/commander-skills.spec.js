@@ -419,12 +419,8 @@ test.describe('战术大师', () => {
     expect(state.discardCount).toBe(2); // ♦️+牌堆顶
   });
 
-  test('♣️ 收割：击败明置并选择从牌库抽牌替换', async ({ page }) => {
-    page.on('dialog', async dialog => {
-      if (dialog.message().includes('收割')) await dialog.accept();
-      else if (dialog.message().includes('是否将击败')) await dialog.accept();
-      else await dialog.accept();
-    });
+  test('♣️ 收割：击败明置敌人弃掉，牌库顶牌作为物资奖励', async ({ page }) => {
+    acceptDialogs(page);
     await patchGameState(page, {
       supply: [makeCard('clubs', 3)],
       deck: [makeCard('spades', 4)],
@@ -436,17 +432,19 @@ test.describe('战术大师', () => {
     await clickSelectableRevealedEnemy(page);
     const state = await getGameState(page);
     expect(state.enemies[0].defeated).toBe(true);
-    expect(state.supplyCount).toBe(1); // 抽到的新物资
+    expect(state.supplyCount).toBe(1); // 牌库顶牌作为新物资
+    expect(state.discardCount).toBe(2); // ♣️物资 + 被击败的敌人
   });
 
-  test('♠️ 战争艺术：失败时根据物资花色数获得额外效果', async ({ page }) => {
+  test('♠️ 战争艺术：失败时根据物资花色数选择额外效果', async ({ page }) => {
     page.on('dialog', async dialog => {
       if (dialog.message().includes('战争艺术')) await dialog.accept();
+      else if (dialog.type() === 'prompt') await dialog.accept('2'); // 3种花色选择选项2：抽一张牌
       else await dialog.accept();
     });
     await patchGameState(page, {
       hand: [makeCard('clubs', 2)],
-      supply: [makeCard('spades', 8), makeCard('hearts', 5), makeCard('diamonds', 3)], // 3种花色
+      supply: [makeCard('spades', 8), makeCard('hearts', 5), makeCard('diamonds', 3)], // 3种花色（使用♠️前统计）
       deck: [makeCard('spades', 4)],
       enemies: [makeEnemy('hearts', 5, 4, 0, 1, false)],
     });
@@ -478,14 +476,14 @@ test.describe('推进之王', () => {
     expect(state.handCount).toBe(4);
   });
 
-  test('♦️ 扰乱侦查：交换敌人位置并翻转明暗，有敌人变暗置时抽1张', async ({ page }) => {
+  test('♦️ 扰乱侦查：交换敌人位置并翻转明暗，源变暗置时抽1张', async ({ page }) => {
     acceptDialogs(page);
-    // e1: layer3 pos1 明置 — 作为源，初始可选中（上方无覆盖）
-    const e1 = makeEnemy('hearts', 5, 3, 0, 1, true);
-    // e2: layer4 pos3 暗置 — 作为目标，初始可选中
-    const e2 = makeEnemy('diamonds', 7, 4, 1, 3, false);
-    // e3: layer3 pos3 明置 — 初始被 e2 覆盖，交换后被 e1(新位置)覆盖，会翻为暗置触发抽牌
-    const e3 = makeEnemy('clubs', 3, 3, 2, 3, true);
+    // e1: layer4 pos3 明置 — 作为源，最底层不被覆盖，覆盖同列上层的 e2
+    const e1 = makeEnemy('hearts', 5, 4, 0, 3, true);
+    // e2: layer3 pos3 暗置 — 被 e1 覆盖，作为目标
+    const e2 = makeEnemy('diamonds', 7, 3, 1, 3, false);
+    // e3: layer3 pos1 明置 — 不被 e1/e2 覆盖，保持明置
+    const e3 = makeEnemy('clubs', 3, 3, 2, 1, true);
     await patchGameState(page, {
       supply: [makeCard('diamonds', 3)],
       hand: [makeCard('spades', 8)],
@@ -495,8 +493,8 @@ test.describe('推进之王', () => {
     await page.click('button:has-text("发动战术")');
     await clickSupplyBySuit(page, 'diamonds');
     await waitForMessage(page, '扰乱侦查');
-    await clickSelectableEnemy(page); // 选源 e1
-    await clickSelectableDarkEnemy(page); // 选目标 e2
+    await clickSelectableEnemy(page); // 选源 e1（唯一覆盖暗置敌人的可选中牌）
+    await clickSelectableDarkEnemy(page); // 选目标 e2（被 e1 覆盖的暗置牌）
     const state = await getGameState(page);
     // 阶段恢复
     expect(state.phase).toBe('playing');
@@ -508,16 +506,16 @@ test.describe('推进之王', () => {
       window.gameState.enemies.slice(0, 2).map(e => ({ pos: e.pos, layer: e.layer, index: e.index }))
     );
     expect(positions[0].pos).toBe(3);
-    expect(positions[0].layer).toBe(4);
+    expect(positions[0].layer).toBe(3);
     expect(positions[0].index).toBe(1);
-    expect(positions[1].pos).toBe(1);
-    expect(positions[1].layer).toBe(3);
+    expect(positions[1].pos).toBe(3);
+    expect(positions[1].layer).toBe(4);
     expect(positions[1].index).toBe(0);
-    // 明暗翻转：e2 从暗置变明置；e3 因被覆盖从明置变暗置
-    expect(state.enemies[0].revealed).toBe(true);  // e1 保持明置
-    expect(state.enemies[1].revealed).toBe(true);  // e2 变为明置
-    expect(state.enemies[2].revealed).toBe(false); // e3 被覆盖后翻为暗置
-    // 有敌人变暗置，抽1张牌
+    // 明暗翻转：e1(源) 到上层被覆盖变暗置；e2(目标) 到底层不再被覆盖变明置；e3 不变
+    expect(state.enemies[0].revealed).toBe(false); // e1 明置→暗置
+    expect(state.enemies[1].revealed).toBe(true);  // e2 暗置→明置
+    expect(state.enemies[2].revealed).toBe(true);  // e3 保持明置
+    // 源从明置变暗置，抽1张牌
     expect(state.handCount).toBe(2); // 初始1张 + 抽1张
   });
 
@@ -535,7 +533,7 @@ test.describe('推进之王', () => {
     expect(state.enemies[0].defeated).toBe(true);
   });
 
-  test('♠️ 突破战术：成功后可翻一张新暗置敌人', async ({ page }) => {
+  test('♠️ 突破战术：击败覆盖暗置敌人的明置敌人后可翻一张新暗置敌人', async ({ page }) => {
     page.on('dialog', async dialog => {
       if (dialog.message().includes('突破战术')) await dialog.accept();
       else await dialog.accept();
@@ -544,15 +542,16 @@ test.describe('推进之王', () => {
       hand: [makeCard('hearts', 5)],
       supply: [makeCard('spades', 8)],
       enemies: [
-        makeEnemy('hearts', 5, 3, 0, 2, true), // 被攻击的明置敌人
-        makeEnemy('clubs', 3, 4, 1, 6, false), // 新暴露的暗置敌人（放在pos6避免覆盖hearts5）
+        makeEnemy('hearts', 5, 4, 0, 3, true),  // layer4 pos3 明置，最底层，覆盖同列上层的 e2
+        makeEnemy('clubs', 3, 3, 1, 3, false),  // layer3 pos3 暗置，被 e1 覆盖，击败 e1 后新变为 selectable
       ],
     });
     await clickHandBySuit(page, 'hearts');
-    await clickSelectableEnemy(page);
+    await clickSelectableEnemy(page); // 点击 e1（唯一 selectable 的明置敌人）
     await waitForMessage(page, '突破战术');
-    await clickSelectableDarkEnemy(page);
+    await clickSelectableDarkEnemy(page); // 点击 e2（新产生的 selectable 暗置敌人）
     const state = await getGameState(page);
+    expect(state.enemies[0].defeated).toBe(true);
     expect(state.enemies[1].revealed).toBe(true);
   });
 });

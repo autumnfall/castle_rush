@@ -292,7 +292,7 @@ export const COMMANDERS = {
       return true;
     },
     onSkillDiamonds: (card) => {
-      const confirmed = confirm(`是否发动 ♦️ 谨慎侦查？\n将弃掉物资牌：♦️${rankName(card.rank)}\n效果：选择1个暗置敌人，弃牌堆顶一张，花色一致可重复，不一致可用物资交换。`);
+      const confirmed = confirm(`是否发动 ♦️ 谨慎侦查？\n将弃掉物资牌：♦️${rankName(card.rank)}\n效果：选择暗置敌人翻明置，弃牌堆顶一张，花色一致可继续，最后用物资交换最后一次弃牌。`);
       if (!confirmed) return true;
       const revealables = window.gameState.enemies.filter(e => !e.defeated && !e.revealed && window.isSelectable(e));
       if (revealables.length === 0) {
@@ -307,7 +307,7 @@ export const COMMANDERS = {
       return false;
     },
     onSkillClubs: (card) => {
-      const confirmed = confirm(`是否发动 ♣️ 收割？\n将弃掉物资牌：♣️${rankName(card.rank)}\n效果：击败明置敌人，可将其弃掉，从牌库抽一张牌替换为物资。`);
+      const confirmed = confirm(`是否发动 ♣️ 收割？\n将弃掉物资牌：♣️${rankName(card.rank)}\n效果：击败明置敌人，将其弃掉，从牌库抽一张牌作为物资奖励。`);
       if (!confirmed) return true;
       const attackables = window.gameState.enemies.filter(e => !e.defeated && e.revealed && window.isSelectable(e));
       if (attackables.length === 0) {
@@ -321,8 +321,13 @@ export const COMMANDERS = {
       });
       return false;
     },
-    onSkillSpades: () => { alert('♠️ 战争艺术是被动技能：代替手牌进入弃牌堆后，根据物资花色数获得额外效果。'); return true; },
+    onSkillSpades: () => { alert('♠️ 战争艺术是被动技能：攻城成功或失败时，可代替手牌进入弃牌堆，根据物资花色数选择额外效果。'); return true; },
     onAttackSuccess: (handCard, enemy) => {
+      const defense = window.gameState.supply.find(c => c.suit === 'spades');
+      if (defense) {
+        setTimeout(() => window.askDefenseTactician(handCard, enemy, defense, true), 150);
+        return false;
+      }
       window.gameState.discard.push(handCard);
       window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       enemy.defeated = true;
@@ -367,16 +372,19 @@ export const COMMANDERS = {
       return true;
     },
     onSkillDiamonds: (card) => {
-      const confirmed = confirm(`是否发动 ♦️ 扰乱侦查？\n将弃掉物资牌：♦️${rankName(card.rank)}\n效果：选择一个可选中敌人与相邻暗置敌人交换位置，然后翻转明暗。若有变为暗置，抽1张。`);
+      const confirmed = confirm(`是否发动 ♦️ 扰乱侦查？\n将弃掉物资牌：♦️${rankName(card.rank)}\n效果：选择一个可选中敌人与被其覆盖的暗置敌人交换位置，然后翻转明暗。若源变暗置，抽1张。`);
       if (!confirmed) return true;
-      const selectableEnemies = window.gameState.enemies.filter(e => !e.defeated && window.isSelectable(e));
+      const selectableEnemies = window.gameState.enemies.filter(e => {
+        if (e.defeated || !window.isSelectable(e)) return false;
+        return window.gameState.enemies.some(other => other.id !== e.id && !other.defeated && !other.revealed && other.coveredBy.includes(e.id));
+      });
       if (selectableEnemies.length === 0) {
-        window.useSupplyCard(card, () => { window.setMessage('♦️ 扰乱侦查：没有可选中的敌人。'); window.finishSkill(); });
+        window.useSupplyCard(card, () => { window.setMessage('♦️ 扰乱侦查：没有可选中且覆盖暗置敌人的牌。'); window.finishSkill(); });
         return true;
       }
       window.useSupplyCard(card, () => {
         window.gameState.phase = 'skill'; window.gameState.skillMode = 'disrupt';
-        window.setMessage('♦️ 扰乱侦查：先选择一个可选中的敌人。');
+        window.setMessage('♦️ 扰乱侦查：先选择一个可选中且覆盖暗置敌人的牌。');
         window.renderAll();
       });
       return false;
@@ -398,13 +406,14 @@ export const COMMANDERS = {
     },
     onSkillSpades: () => { alert('♠️ 突破战术是被动技能：攻城成功时代替手牌进入弃牌堆，若产生新可选中敌人可翻一张为明置。'); return true; },
     onAttackSuccess: (handCard, enemy) => {
+      const beforeSelectableIds = new Set(window.gameState.enemies.filter(e => !e.defeated && window.isSelectable(e)).map(e => e.id));
       window.gameState.discard.push(handCard);
       window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       enemy.defeated = true;
-      // 检查是否产生新可选中敌人
       window.computeCoverage();
-      const newSelectable = window.gameState.enemies.filter(e => !e.defeated && !e.revealed && window.isSelectable(e));
+      const newSelectable = window.gameState.enemies.filter(e => !e.defeated && !e.revealed && window.isSelectable(e) && !beforeSelectableIds.has(e.id));
       if (newSelectable.length > 0) {
+        window.gameState._breakthroughNewIds = newSelectable.map(e => e.id);
         setTimeout(() => {
           const flip = confirm('♠️ 突破战术：击败后产生了新的可选中敌人，是否将其中一张翻为明置？');
           if (flip) {
@@ -413,6 +422,7 @@ export const COMMANDERS = {
             window.setMessage('♠️ 突破战术：点击一张新产生的可选中暗置敌人将其翻为明置。');
             window.renderAll();
           } else {
+            window.gameState._breakthroughNewIds = undefined;
             window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
             window.finishAttack();
           }
