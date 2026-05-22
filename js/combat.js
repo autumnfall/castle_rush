@@ -50,8 +50,15 @@ export function askDefenseIntel(handCard, enemy, defense) {
     const idx = window.gameState.supply.findIndex(c => c.id === defense.id);
     window.gameState.discard.push(window.gameState.supply.splice(idx, 1)[0]);
     window.gameState._skipHandRemove = true;
+    const revealedSelectable = window.gameState.enemies.filter(e => !e.defeated && e.revealed && e.coveredBy.length === 0);
+    if (revealedSelectable.length === 0) {
+      window.setMessage(`♠️ 佯攻发动！用♠️${rankName(defense.rank)}代替手牌。但没有可选中的明置敌人，直接结束。`);
+      finishAttack();
+      return;
+    }
     window.setMessage(`♠️ 佯攻发动！用♠️${rankName(defense.rank)}代替手牌。请选择一张明置敌人变为暗置。`);
     window.gameState.phase = 'skill'; window.gameState.skillMode = 'feint';
+    document.getElementById('skill-section').style.display = 'block';
     window.renderAll();
   } else {
     window.gameState.discard.push(handCard);
@@ -83,10 +90,17 @@ export function askDefenseTactician(handCard, enemy, defense, isSuccess = false)
     if (uniqueSuits >= 4) options.push('3. 选择一个可选中暗置敌人变为明置并抽一张牌');
     const input = prompt(`♠️ 战争艺术发动！用♠️${rankName(defense.rank)}代替手牌。\n物资花色${uniqueSuits}种，请选择额外效果：\n${options.join('\n')}`);
     const choice = parseInt(input);
+    const darkSelectable = window.gameState.enemies.filter(e => !e.defeated && !e.revealed && e.coveredBy.length === 0);
     if (choice === 1 && uniqueSuits >= 2) {
+      if (darkSelectable.length === 0) {
+        window.setMessage('♠️ 战争艺术：没有可选中的暗置敌人，无额外效果。');
+        finishAttack();
+        return;
+      }
       window.gameState._tacticianBonusMode = 'reveal';
       window.gameState.phase = 'skill'; window.gameState.skillMode = 'tactician_bonus';
       window.setMessage('♠️ 战争艺术：选择一个可选中暗置敌人变为明置。');
+      document.getElementById('skill-section').style.display = 'block';
       window.renderAll();
       return;
     } else if (choice === 2 && uniqueSuits >= 3) {
@@ -96,9 +110,17 @@ export function askDefenseTactician(handCard, enemy, defense, isSuccess = false)
       finishAttack();
       return;
     } else if (choice === 3 && uniqueSuits >= 4) {
+      if (darkSelectable.length === 0) {
+        window.setMessage('♠️ 战争艺术：没有可选中的暗置敌人，改为抽一张牌。');
+        const drawn = draw(1);
+        if (drawn.length > 0) window.gameState.hand.push(drawn[0]);
+        finishAttack();
+        return;
+      }
       window.gameState._tacticianBonusMode = 'reveal_draw';
       window.gameState.phase = 'skill'; window.gameState.skillMode = 'tactician_bonus';
       window.setMessage('♠️ 战争艺术：选择一个可选中暗置敌人变为明置，然后抽一张牌。');
+      document.getElementById('skill-section').style.display = 'block';
       window.renderAll();
       return;
     } else {

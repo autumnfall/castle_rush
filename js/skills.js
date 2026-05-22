@@ -16,6 +16,19 @@ export function showSkillPanel() {
 }
 
 export function cancelSkill() {
+  // 处理攻击/防御流程中触发的异步子模式，取消后需正确结束攻击流程
+  const asyncModes = ['breakthrough_reveal', 'tactician_bonus', 'feint', 'feint_reveal'];
+  if (window.gameState.phase === 'skill' && asyncModes.includes(window.gameState.skillMode)) {
+    window.gameState._breakthroughNewIds = undefined;
+    window.gameState._tacticianBonusMode = undefined;
+    window.gameState._feintDarkened = undefined;
+    window.gameState.phase = 'playing';
+    window.gameState.skillMode = null;
+    document.getElementById('skill-section').style.display = 'none';
+    window.setMessage('已取消，回到正常阶段。');
+    window.finishAttack();
+    return;
+  }
   window.gameState.phase = 'playing';
   window.gameState.skillMode = null;
   window.gameState.selectedSupply = null;
@@ -56,6 +69,7 @@ export function finishSkill() {
   window.gameState._breakthroughNewIds = undefined;
   window.gameState._pushNewIds = undefined;
   window.gameState._tacticianBonusMode = undefined;
+  window.gameState._feintDarkened = undefined;
   document.getElementById('skill-section').style.display = 'none';
   window.renderAll();
 }
@@ -321,8 +335,21 @@ export function handleSkillEnemySelect(enemy) {
     if (!enemy.revealed) { window.setMessage('请选择一张明置敌人变为暗置！'); return; }
     enemy.revealed = false;
     window.gameState._feintDarkened = enemy;
+    // 检查是否有可选中的暗置敌人可以翻为明置
+    const darkSelectable = window.gameState.enemies.filter(e => !e.defeated && !e.revealed && isSelectable(e));
+    if (darkSelectable.length === 0) {
+      window.setMessage('♠️ 佯攻：没有可选中的暗置敌人可以翻为明置，直接结束。');
+      window.gameState._feintDarkened = undefined;
+      window.gameState._skipHandRemove = true;
+      window.gameState.phase = 'playing';
+      window.gameState.skillMode = null;
+      document.getElementById('skill-section').style.display = 'none';
+      window.finishAttack();
+      return;
+    }
     window.gameState.skillMode = 'feint_reveal';
     window.setMessage('♠️ 佯攻：已将一张明置敌人变暗置。现在选择另一张可选中的暗置敌人变为明置。');
+    document.getElementById('skill-section').style.display = 'block';
     window.renderAll();
     return;
   }

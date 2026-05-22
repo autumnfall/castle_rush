@@ -177,14 +177,8 @@ export const COMMANDERS = {
     onAttackFail: (handCard, enemy) => {
       window.setMessage(`💥 攻城失败！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 无法攻克 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。敌人已明置。`);
       window.renderAll();
-      const defense = window.gameState.supply.find(c => c.suit === 'spades');
-      if (defense) {
-        setTimeout(() => window.askDefense(handCard, enemy, defense), 150);
-        return false;
-      } else {
-        window.gameState.discard.push(handCard);
-        return true;
-      }
+      window.gameState.discard.push(handCard);
+      return true;
     }
   },
 
@@ -420,6 +414,7 @@ export const COMMANDERS = {
             window.gameState.phase = 'skill'; window.gameState.skillMode = 'breakthrough_reveal';
             window.gameState._breakthroughCount = 1;
             window.setMessage('♠️ 突破战术：点击一张新产生的可选中暗置敌人将其翻为明置。');
+            document.getElementById('skill-section').style.display = 'block';
             window.renderAll();
           } else {
             window.gameState._breakthroughNewIds = undefined;
@@ -435,14 +430,8 @@ export const COMMANDERS = {
     onAttackFail: (handCard, enemy) => {
       window.setMessage(`💥 攻城失败！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 无法攻克 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。敌人已明置。`);
       window.renderAll();
-      const defense = window.gameState.supply.find(c => c.suit === 'spades');
-      if (defense) {
-        setTimeout(() => window.askDefense(handCard, enemy, defense), 150);
-        return false;
-      } else {
-        window.gameState.discard.push(handCard);
-        return true;
-      }
+      window.gameState.discard.push(handCard);
+      return true;
     }
   }
 };
