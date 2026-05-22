@@ -362,15 +362,16 @@ button.gold:hover { background: #aa9a3a; }
   font-size: 12px;
   color: #ccc;
   display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+  text-align: left;
 }
 #commander-bar .cmd-skills span {
   background: rgba(255,255,255,0.08);
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 4px;
-  white-space: nowrap;
+  line-height: 1.5;
 }
 
 /* 隐藏 */
@@ -427,7 +428,7 @@ button.gold:hover { background: #aa9a3a; }
   }
 
   #commander-bar .cmd-title { font-size: 12px; }
-  #commander-bar .cmd-skills { font-size: 10px; gap: 6px; }
+  #commander-bar .cmd-skills { font-size: 10px; gap: 3px; }
 
   button {
     padding: 6px 12px;

@@ -225,7 +225,6 @@ export function updateCommanderBar() {
   document.getElementById('cmd-title').textContent = `${cmd.icon} ${cmd.name}  🎴${cmd.hand} 📦${cmd.supply} 🔄${cmd.mulligan}`;
   const skillsDiv = document.getElementById('cmd-skills');
   skillsDiv.innerHTML = Object.entries(cmd.skillDesc).map(([suit, desc]) => {
-    const short = desc.replace(/^[^\s]+\s/, ''); // 去掉花色前缀
-    return `<span title="${desc}">${SUIT_SYMBOLS[suit]}${short}</span>`;
+    return `<span title="${desc}">${desc}</span>`;
   }).join('');
 }
