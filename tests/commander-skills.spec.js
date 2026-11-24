@@ -78,7 +78,7 @@ test.describe('新手指挥官', () => {
     acceptDialogs(page);
     await patchGameState(page, {
       supply: [makeCard('diamonds', 3)],
-      enemies: [],
+      enemies: [makeEnemy('hearts', 5, 4, 0, 1, true)],
     });
     await page.click('button:has-text("发动战术")');
     await clickSupplyBySuit(page, 'diamonds');

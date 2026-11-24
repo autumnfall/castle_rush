@@ -5,7 +5,7 @@ async function start(page, mode = 'defense') {
   await page.goto('/castle_rush/');
   await page.click(`[data-mode="${mode}"]`);
   await page.click('#btn-mode-confirm');
-  await page.getByRole('button', { name: '确认手牌', exact: true }).click();
+  await page.getByRole('button', { name: /确认手牌/ }).click();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -26,7 +26,7 @@ test('项目子路径下所有模式均可启动', async ({ page }) => {
       await page.click('#btn-cmd-confirm');
     }
     await expect(page.locator('.enemy-card')).toHaveCount(16);
-    await page.getByRole('button', { name: '确认手牌', exact: true }).click();
+    await page.getByRole('button', { name: /确认手牌/ }).click();
     expect(await page.evaluate(() => window.gameState.phase)).toBe('playing');
     expect(failed).toEqual([]);
     page.off('response', onResponse);
