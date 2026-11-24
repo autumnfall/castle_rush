@@ -61,9 +61,11 @@ main.shell { padding-block: 26px 42px; }
 .hero-art {
   position: relative;
   min-width: 0;
-  background: #27232b url("../assets/citadel.webp") center / cover no-repeat;
+  display: block;
+  background: #27232b;
 }
-.hero-art::before {
+.hero-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hero-art::after {
   content: "";
   position: absolute;
   inset: 12px;

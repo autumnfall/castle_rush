@@ -24,7 +24,15 @@
           <p>以手牌攻城，把击败的敌人化为物资。冲破层层防线，拿下城堡。</p>
           <button class="quiet" type="button" onclick="showRules()">阅读规则</button>
         </div>
-        <div class="hero-art" aria-hidden="true"></div>
+        <picture class="hero-art" aria-hidden="true">
+          <source type="image/avif"
+            srcset="assets/citadel-480.avif 480w, assets/citadel-768.avif 768w, assets/citadel-1120.avif 1120w"
+            sizes="(max-width: 520px) calc(100vw - 22px), (max-width: 600px) calc(100vw - 50px), (max-width: 1184px) calc(55vw - 28px), 624px">
+          <img src="assets/citadel-480.webp"
+            srcset="assets/citadel-480.webp 480w, assets/citadel-960.webp 960w"
+            sizes="(max-width: 520px) calc(100vw - 22px), (max-width: 600px) calc(100vw - 50px), (max-width: 1184px) calc(55vw - 28px), 624px"
+            width="480" height="270" fetchpriority="high" alt="">
+        </picture>
       </div>
 
       <div class="screen-heading"><h2>选择游戏模式</h2></div>
