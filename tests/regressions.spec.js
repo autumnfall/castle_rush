@@ -147,6 +147,24 @@ test('桌面并排显示牌桌与指令，窄屏手牌在面板内滚动', async
   await expect(hand.locator('.hand-card').last()).toBeInViewport();
 });
 
+test('组合模式在短屏首屏显示棋盘、手牌和操作', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 720 });
+  await page.goto('/castle_rush/');
+  await page.locator('[data-mode="commander+defense"]').click();
+  await page.click('#btn-mode-confirm');
+  await page.locator('[data-key="novice"]').click();
+  await page.click('#btn-cmd-confirm');
+  await page.getByRole('button', { name: /确认手牌/ }).click();
+
+  for (const [width, height] of [[768, 720], [390, 667], [320, 667]]) {
+    await page.setViewportSize({ width, height });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    for (const selector of ['#board-area', '#hand-container', '.game-actions']) {
+      await expect(page.locator(selector)).toBeInViewport({ ratio: 1 });
+    }
+  }
+});
+
 test('战时补给等待玩家选择后才推进城防阶段', async ({ page }) => {
   await start(page);
   acceptDialogs(page);
