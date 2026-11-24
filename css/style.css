@@ -40,18 +40,18 @@ main.shell { padding-block: 26px 42px; }
 .masthead-meta { justify-self: end; color: var(--muted); font-size: .82rem; }
 
 .intro {
-  min-height: 348px;
+  min-height: clamp(282px, 31vw, 348px);
   display: grid;
-  grid-template-columns: .88fr 1.12fr;
+  grid-template-columns: minmax(0, 9fr) minmax(0, 11fr);
   border: 1px solid #927750;
   border-radius: 14px;
   overflow: hidden;
   background: radial-gradient(ellipse at 20% 30%, #2e3c49, transparent 72%), #1a222c;
   box-shadow: 0 16px 44px #0005;
 }
-.intro-copy { align-self: center; padding: clamp(24px, 5vw, 66px); position: relative; z-index: 1; }
+.intro-copy { align-self: center; padding: clamp(20px, 4vw, 55px); position: relative; z-index: 1; }
 .intro h1 {
-  font: 900 clamp(3rem, 7.1vw, 6.2rem)/1.06 var(--serif);
+  font: 900 clamp(2.75rem, 6.4vw, 5.6rem)/1.06 var(--serif);
   letter-spacing: .025em;
   white-space: nowrap;
   text-shadow: 0 .052em #080e16;
@@ -146,35 +146,40 @@ button:disabled:not(.enemy-card, .hand-card) { opacity: .52; cursor: not-allowed
 #info-bar .enemy-stat > b { color: var(--gold); }
 #info-bar small { white-space: nowrap; font-size: .78rem; }
 #defense-bar, #commander-bar {
-  margin-bottom: 12px;
-  padding: 10px 12px;
+  padding: 9px 12px;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: var(--panel);
 }
-#defense-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; font-size: .88rem; }
-#phase-display, #commander-bar .cmd-title { font-weight: 800; color: var(--gold); }
+#defense-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 12px; font-size: .88rem; }
+#phase-display, #cmd-title { font-weight: 800; color: var(--gold); }
 #btn-skip-phase { margin-inline-start: auto; }
 #commander-bar { display: none; }
-#commander-bar .cmd-skills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 14px; margin-top: 5px; color: var(--muted); font-size: .86rem; }
+#cmd-title { cursor: pointer; overflow-wrap: anywhere; }
+#commander-bar .cmd-skills { display: grid; gap: 7px; margin-top: 8px; color: var(--muted); font-size: .86rem; }
 
-.battlefield { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px; align-items: start; }
+.battlefield {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(290px, 1fr);
+  gap: 14px;
+  align-items: start;
+}
 .panel, .section, #message { border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.game-table { min-width: 0; overflow: hidden; border-color: #8a7253; }
 .board-panel {
-  overflow: hidden;
-  padding: 13px;
-  border-color: #8a7253;
+  padding: 16px;
   background: repeating-linear-gradient(140deg, #ffffff05 0 1px, transparent 1px 5px), radial-gradient(ellipse at 50% 20%, #384452, #1a2330 78%);
 }
+.hand-panel { padding: 14px 16px; border-top: 1px solid #8a7253; text-align: center; }
 .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 14px; }
 .panel-heading h2, .section-title { font: 800 1.2rem/1.35 var(--serif); }
 .board-legend { color: var(--gold); font-size: .8rem; text-align: right; }
 .board-legend::before { content: ""; display: inline-block; width: .56em; height: .68em; border: 1px solid currentColor; margin-inline-end: 5px; border-radius: 1px; }
 #board-area {
-  --row-step: 53px;
-  --card-height: 96px;
+  --row-step: clamp(52px, 7.3svh, 68px);
+  --card-height: clamp(103px, 13.2svh, 123px);
   position: relative;
-  width: min(360px, 100%);
+  width: min(462px, 100%);
   height: calc(4 * var(--row-step) + var(--card-height));
   margin: 3px auto 10px;
 }
@@ -212,18 +217,20 @@ button:disabled:not(.enemy-card, .hand-card) { opacity: .52; cursor: not-allowed
 .hand-card:hover { transform: translateY(-2px); }
 .hand-card.selected, .hand-card.synergy-target { transform: translateY(-4px); border-color: #fff2b7; box-shadow: 0 0 0 2px #f1b35e, 0 5px 10px #0008; }
 .hand-card.synergy-target { box-shadow: 0 0 0 2px #e89294, 0 5px 10px #0008; }
-#player-area { display: grid; min-width: 0; gap: 10px; }
+#player-area { display: grid; min-width: 0; padding: 14px; align-content: start; gap: 12px; background: #151e28; }
 #message { min-height: 52px; border-inline-start: 3px solid var(--gold); padding: 10px 12px; color: #ffe2ad; line-height: 1.55; font-size: .92rem; }
 .section { padding: 12px; min-width: 0; }
 .section-hint { margin-top: 3px; color: var(--muted); font-size: .85rem; }
-#hand-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+#hand-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; }
+#mulligan-bar { justify-content: center; }
 #piles-area { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
 .pile-box { min-width: 48px; }
 .pile-label { color: var(--muted); font-size: .8rem; margin-bottom: 4px; }
 .pile-cards { display: flex; flex-wrap: wrap; gap: 4px; min-height: 50px; }
 .pile-card { width: 39px; height: 51px; font-size: .9rem; }
 .pile-card.back::after { font-size: 1rem; }
-.game-actions { margin-top: 0; }
+.game-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 0; gap: 6px; }
+.game-actions > button:not(.enemy-card, .hand-card) { padding-inline: 5px; }
 #skill-section { border-color: #967550; }
 
 #modal-overlay { position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 12px; background: #060910bf; }
@@ -248,32 +255,69 @@ button:disabled:not(.enemy-card, .hand-card) { opacity: .52; cursor: not-allowed
 .tab-content h4 { margin: 12px 0 5px; color: var(--gold); }
 .tab-content ul { padding-inline-start: 1.25rem; }
 
+@media (min-width: 721px) and (max-height: 780px) {
+  .board-panel { padding: 12px; }
+  #board-area { --row-step: clamp(43px, 6.4svh, 51px); --card-height: 96px; width: min(425px, 100%); }
+  .hand-panel { padding-block: 10px; }
+  .hand-card { height: 74px; }
+}
 @media (max-width: 800px) {
-  .battlefield { grid-template-columns: 1fr; }
-  #player-area { display: contents; }
-  #message { grid-row: 1; }
-  .intro { min-height: 278px; }
   .mode-grid, .commander-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+@media (max-width: 720px) {
+  .battlefield {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "notice" "board" "hand" "actions" "resources" "skill" "commander";
+    gap: 8px;
+  }
+  .game-table, #player-area { display: contents; }
+  #message { grid-area: notice; min-height: 0; padding: 7px 9px; }
+  .board-panel { grid-area: board; padding: 9px; border: 1px solid #8a7253; border-radius: 9px; }
+  .panel-heading { margin-bottom: 7px; }
+  #board-area { --row-step: 40px; --card-height: 72px; width: min(345px, 100%); margin-bottom: 4px; }
+  .hand-panel { grid-area: hand; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); text-align: left; }
+  #hand-container {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 6px;
+    margin: 3px -4px 0;
+    padding: 6px 4px 4px;
+    overflow-x: auto;
+    scroll-padding-inline: 4px;
+  }
+  .hand-card { flex: 0 0 46px; height: 61px; }
+  .hand-card .rank, .enemy-card .rank { font-size: 1.1rem; }
+  .hand-card .suit, .enemy-card .suit { font-size: 1.3rem; }
+  .game-actions { grid-area: actions; }
+  .resource-panel { grid-area: resources; }
+  #skill-section { grid-area: skill; }
+  #commander-bar { grid-area: commander; }
+  #mulligan-bar { margin-top: 4px; justify-content: flex-start; }
+}
+@media (max-width: 600px) {
+  .intro { min-height: 0; grid-template-columns: 1fr; }
+  .intro-copy { padding: 14px; }
+  .intro p { margin-block: .45rem .55rem; }
+  .hero-art { grid-row: 1; min-height: clamp(134px, 38vw, 192px); }
+}
 @media (max-width: 520px) {
-  .shell { width: calc(100% - 24px); }
-  main.shell { padding-top: 14px; }
-  .masthead { min-height: 50px; grid-template-columns: 1fr 1fr; }
+  .shell { width: calc(100% - 20px); }
+  main.shell { padding-top: 10px; }
+  .masthead { min-height: 44px; grid-template-columns: 1fr 1fr; }
   .masthead-brand { justify-self: end; }
   .masthead-meta { display: none; }
-  .intro { grid-template-columns: 1fr; }
-  .intro-copy { padding: 16px; }
-  .intro p { margin-block: .55rem .7rem; }
-  .hero-art { grid-row: 1; min-height: 146px; }
   .mode-card, .commander-card { padding: 10px; }
   .mode-desc, .cmd-desc { font-size: .84rem; }
-  #info-bar { grid-template-columns: 1fr 1.2fr 1fr; gap: 5px; }
-  #info-bar > span { padding: 6px; }
-  #info-bar .supply-stat { grid-column: span 2; }
-  .board-panel { padding: 9px; }
-  #board-area { --row-step: 42px; --card-height: 76px; }
-  .hand-card { width: 49px; height: 68px; }
-  #commander-bar .cmd-skills { grid-template-columns: 1fr; }
+  #info-bar { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-bottom: 7px; }
+  #info-bar > span { flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 1px; font-size: .73rem; }
+  #info-bar > span > b { font-size: 1.16rem; }
+  #info-bar small { display: none; }
+  #defense-bar { gap: 4px 8px; margin-bottom: 7px; padding: 4px 6px; font-size: .76rem; }
+  #btn-skip-phase { min-height: 34px; padding: 3px 6px; font-size: .8rem; }
+  .panel-heading h2, .section-title { font-size: 1.04rem; }
+}
+@media (max-width: 360px) {
+  #board-area { --row-step: 36px; --card-height: 66px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .mode-card, .commander-card, .hand-card { transition: none; }

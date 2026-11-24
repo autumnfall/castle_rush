@@ -82,23 +82,16 @@
         <button id="btn-skip-phase" onclick="skipPhase()">跳过阶段</button>
       </div>
 
-      <div id="commander-bar">
-        <div class="cmd-title" id="cmd-title">指挥官</div>
-        <div class="cmd-skills" id="cmd-skills"></div>
-      </div>
-
       <div class="battlefield">
-        <section class="board-panel panel" aria-labelledby="board-title">
-          <div class="panel-heading">
-            <h2 id="board-title">城堡防线</h2>
-            <span class="board-legend">金边标出可选敌人</span>
-          </div>
-          <div id="board-area"></div>
-        </section>
-
-        <div id="player-area">
-          <div id="message" role="status" aria-live="polite"></div>
-          <div class="section">
+        <div class="game-table panel">
+          <section class="board-panel" aria-labelledby="board-title">
+            <div class="panel-heading">
+              <h2 id="board-title">城堡防线</h2>
+              <span class="board-legend">金边标出可选敌人</span>
+            </div>
+            <div id="board-area"></div>
+          </section>
+          <div class="hand-panel">
             <h2 class="section-title">手牌</h2>
             <p class="section-hint">先选手牌，再选敌人攻城。</p>
             <div id="hand-container"></div>
@@ -107,8 +100,16 @@
               <button onclick="confirmMulligan()">确认手牌</button>
             </div>
           </div>
+        </div>
 
-          <div class="section">
+        <section id="player-area" class="panel" aria-label="作战指令">
+          <div id="message" role="status" aria-live="polite"></div>
+          <div class="action-bar game-actions">
+            <button class="primary" onclick="showSkillPanel()">发动战术</button>
+            <button onclick="showRules()">规则说明</button>
+            <button class="danger" onclick="resetGame()">重新开始</button>
+          </div>
+          <div class="section resource-panel">
             <h2 class="section-title">物资与牌堆</h2>
             <div id="piles-area">
               <div class="pile-box">
@@ -131,7 +132,6 @@
               </div>
             </div>
           </div>
-
           <div class="section" id="skill-section" style="display:none;">
             <h2 class="section-title">战术</h2>
             <p class="section-hint">选择一张物资牌，或用同点数的手牌协同。</p>
@@ -140,13 +140,11 @@
               <button class="danger" onclick="cancelSkill()">取消</button>
             </div>
           </div>
-
-          <div class="action-bar game-actions">
-            <button class="primary" onclick="showSkillPanel()">发动战术</button>
-            <button onclick="showRules()">规则说明</button>
-            <button class="danger" onclick="resetGame()">重新开始</button>
-          </div>
-        </div>
+          <details id="commander-bar">
+            <summary id="cmd-title">指挥官</summary>
+            <div class="cmd-skills" id="cmd-skills"></div>
+          </details>
+        </section>
       </div>
     </div>
   </main>

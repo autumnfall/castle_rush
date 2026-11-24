@@ -123,10 +123,28 @@ test('补给中触发疲劳失败不会重新进入游戏', async ({ page }) => 
   await expect(page.locator('#modal-title')).toContainText('疲劳');
 });
 
-test('手机屏幕上游戏不产生水平溢出', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 });
+test('桌面并排显示牌桌与指令，窄屏手牌在面板内滚动', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
   await start(page, 'basic');
+  const board = page.locator('.board-panel');
+  const actions = page.locator('.game-actions');
+  const boardBox = await board.boundingBox();
+  const actionBox = await actions.boundingBox();
+  expect(actionBox.x).toBeGreaterThan(boardBox.x + boardBox.width);
+
+  await page.setViewportSize({ width: 320, height: 667 });
+  const hand = page.locator('#hand-container');
+  expect((await hand.boundingBox()).y).toBeGreaterThan((await board.boundingBox()).y);
+  await expect(actions).toBeInViewport();
+
+  await patchGameState(page, {
+    hand: Array.from({ length: 12 }, (_, i) => makeCard('hearts', i + 1)),
+  });
+  expect(await hand.evaluate(el => el.scrollWidth > el.clientWidth)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await hand.locator('.hand-card').last().click();
+  await expect(hand.locator('.hand-card').last()).toHaveClass(/selected/);
+  await expect(hand.locator('.hand-card').last()).toBeInViewport();
 });
 
 test('战时补给等待玩家选择后才推进城防阶段', async ({ page }) => {

@@ -208,6 +208,7 @@ export function switchTab(id) {
 
 export function updateCommanderBar() {
   const bar = document.getElementById('commander-bar');
+  bar.open = false;
   const cmd = getCommander();
   if (!cmd) {
     bar.style.display = 'none';

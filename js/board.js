@@ -61,6 +61,7 @@ export function renderEnemies() {
 export function renderHand() {
   const container = document.getElementById('hand-container');
   const focusedIndex = Array.from(container.children).indexOf(document.activeElement);
+  const scrollLeft = container.scrollLeft;
   container.innerHTML = '';
   window.gameState.hand.forEach((card, idx) => {
     const el = document.createElement('button');
@@ -81,5 +82,6 @@ export function renderHand() {
     el.onclick = () => window.onHandCardClick(idx);
     container.appendChild(el);
   });
+  container.scrollLeft = scrollLeft;
   container.children[focusedIndex]?.focus({ preventScroll: true });
 }
