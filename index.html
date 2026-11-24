@@ -4,125 +4,158 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>城堡突袭</title>
+  <meta name="theme-color" content="#11171f">
   <link rel="icon" href="data:,">
   <meta name="description" content="城堡突袭：单人策略卡牌游戏，包含基础规则、指挥官和城防扩展。">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h1>🏰 城堡突袭</h1>
+  <header class="masthead shell">
+    <a class="collection-link" href="/">游戏陈列室</a>
+    <span class="masthead-brand"><span aria-hidden="true">♜</span> 城堡突袭</span>
+    <span class="masthead-meta">单人策略卡牌</span>
+  </header>
 
-  <!-- 模式选择 -->
-  <div id="mode-select">
-    <h2>选择游戏模式</h2>
-    <div class="mode-grid">
-      <div class="mode-card" data-mode="basic" onclick="selectMode('basic')">
-        <h3>🎴 基础游戏</h3>
-        <p>标准规则，适合入门<br>无指挥官，无城防</p>
-      </div>
-      <div class="mode-card" data-mode="commander" onclick="selectMode('commander')">
-        <h3>🎖️ 指挥官扩展</h3>
-        <p>选择指挥官，使用独特战术<br>5位指挥官可选</p>
-      </div>
-      <div class="mode-card" data-mode="defense" onclick="selectMode('defense')">
-        <h3>🏛️ 城防扩展</h3>
-        <p>时间流逝，城防强化<br>疲劳规则，回合阶段化</p>
-      </div>
-      <div class="mode-card" data-mode="commander+defense" onclick="selectMode('commander+defense')">
-        <h3>⚔️ 指挥官+城防</h3>
-        <p>完整体验<br>7位指挥官+城防系统</p>
-      </div>
-    </div>
-    <button id="btn-mode-confirm" onclick="confirmMode()" disabled>请选择游戏模式</button>
-  </div>
-
-  <!-- 指挥官选择 -->
-  <div id="commander-select" class="hidden">
-    <h2>选择指挥官</h2>
-    <div class="commander-grid" id="commander-list"></div>
-    <div id="commander-detail" style="background:rgba(0,0,0,0.3);border-radius:8px;padding:12px;margin-bottom:12px;text-align:left;font-size:13px;line-height:1.6;"></div>
-    <button id="btn-cmd-confirm" onclick="confirmCommander()" disabled>请选择指挥官</button>
-    <button class="danger" onclick="backToMode()">返回</button>
-  </div>
-
-  <!-- 游戏主界面 -->
-  <div id="game-screen" class="hidden">
-    <div id="info-bar">
-      <span>牌库: <b id="deck-count">0</b></span>
-      <span>弃牌: <b id="discard-count">0</b></span>
-      <span>回合: <b id="turn-count">1</b></span>
-      <span>剩余敌人: <b id="enemy-count">16</b></span>
-      <span>物资: <b id="supply-count">0</b> (♥<b id="supply-h">0</b> ♦<b id="supply-d">0</b> ♣<b id="supply-c">0</b> ♠<b id="supply-s">0</b>)</span>
-    </div>
-    <div id="defense-bar" style="display:none;">
-      <span id="phase-display">⏳ 时间流逝</span>
-      <span id="time-card-display"></span>
-      <span id="fatigue-display">疲劳: <b id="fatigue-count">0</b>/2</span>
-      <button id="btn-skip-phase" onclick="skipPhase()">⏭️ 跳过阶段</button>
-    </div>
-
-    <div id="commander-bar">
-      <div class="cmd-title" id="cmd-title">指挥官</div>
-      <div class="cmd-skills" id="cmd-skills"></div>
-    </div>
-
-    <div id="board-area"></div>
-
-    <div id="player-area">
-      <div class="section">
-        <div class="section-title">🎴 手牌 (点击选中，再点击敌人攻城)</div>
-        <div id="hand-container"></div>
-        <div id="mulligan-bar" style="display:none;">
-          <button id="btn-mulligan" onclick="doMulligan()">🔄 重调手牌 (剩余 <span id="mulligan-left">2</span> 次)</button>
-          <button onclick="confirmMulligan()">✅ 确认手牌</button>
+  <main class="shell">
+    <section id="mode-select">
+      <div class="intro">
+        <div class="intro-copy">
+          <h1>城堡<span>突袭</span></h1>
+          <p>以手牌攻城，把击败的敌人化为物资。冲破层层防线，拿下城堡。</p>
+          <button class="quiet" type="button" onclick="showRules()">阅读规则</button>
         </div>
+        <div class="hero-art" aria-hidden="true"></div>
       </div>
 
-      <div class="section">
-        <div class="section-title">物资 / 牌库 / 弃牌堆</div>
-        <div id="piles-area">
-          <div class="pile-box">
-            <div class="pile-label">物资牌堆</div>
-            <div class="pile-cards" id="supply-pile"></div>
+      <div class="screen-heading"><h2>选择游戏模式</h2></div>
+      <div class="mode-grid">
+        <button type="button" class="mode-card" data-mode="basic" onclick="selectMode('basic')" aria-pressed="false">
+          <span class="mode-emblem" aria-hidden="true">♠</span>
+          <span class="mode-name">基础游戏</span>
+          <span class="mode-desc">使用标准规则，从第一场攻城开始。</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="commander" onclick="selectMode('commander')" aria-pressed="false">
+          <span class="mode-emblem" aria-hidden="true">♞</span>
+          <span class="mode-name">指挥官扩展</span>
+          <span class="mode-desc">从五位指挥官中挑选一位，运用专属战术。</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="defense" onclick="selectMode('defense')" aria-pressed="false">
+          <span class="mode-emblem" aria-hidden="true">♜</span>
+          <span class="mode-name">城防扩展</span>
+          <span class="mode-desc">规划侦查、攻城和补给，留意昼夜与疲劳。</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="commander+defense" onclick="selectMode('commander+defense')" aria-pressed="false">
+          <span class="mode-emblem" aria-hidden="true">♛</span>
+          <span class="mode-name">指挥官 + 城防</span>
+          <span class="mode-desc">结合两种扩展，解锁全部七位指挥官。</span>
+        </button>
+      </div>
+      <div class="setup-actions">
+        <button class="primary" id="btn-mode-confirm" onclick="confirmMode()" disabled>请选择游戏模式</button>
+      </div>
+    </section>
+
+    <!-- 指挥官选择 -->
+    <div id="commander-select" class="hidden">
+      <div class="screen-heading"><h2>选择指挥官</h2></div>
+      <div class="commander-grid" id="commander-list"></div>
+      <div id="commander-detail" aria-live="polite"></div>
+      <div class="setup-actions">
+        <button class="primary" id="btn-cmd-confirm" onclick="confirmCommander()" disabled>请选择指挥官</button>
+        <button class="quiet" onclick="backToMode()">返回模式选择</button>
+      </div>
+    </div>
+
+    <!-- 游戏主界面 -->
+    <div id="game-screen" class="hidden">
+      <div id="info-bar" aria-label="战况">
+        <span>回合 <b id="turn-count">1</b></span>
+        <span class="enemy-stat">剩余敌人 <b id="enemy-count">16</b></span>
+        <span>牌库 <b id="deck-count">0</b></span>
+        <span>弃牌 <b id="discard-count">0</b></span>
+        <span class="supply-stat">物资 <b id="supply-count">0</b> <small>(♥<b id="supply-h">0</b> ♦<b id="supply-d">0</b> ♣<b id="supply-c">0</b> ♠<b id="supply-s">0</b>)</small></span>
+      </div>
+      <div id="defense-bar" style="display:none;">
+        <span id="phase-display">⏳ 时间流逝</span>
+        <span id="time-card-display"></span>
+        <span id="fatigue-display">疲劳: <b id="fatigue-count">0</b>/2</span>
+        <button id="btn-skip-phase" onclick="skipPhase()">跳过阶段</button>
+      </div>
+
+      <div id="commander-bar">
+        <div class="cmd-title" id="cmd-title">指挥官</div>
+        <div class="cmd-skills" id="cmd-skills"></div>
+      </div>
+
+      <div class="battlefield">
+        <section class="board-panel panel" aria-labelledby="board-title">
+          <div class="panel-heading">
+            <h2 id="board-title">城堡防线</h2>
+            <span class="board-legend">金边标出可选敌人</span>
           </div>
-          <div class="pile-box">
-            <div class="pile-label">牌库</div>
-            <div class="pile-cards">
-              <div class="pile-card back" id="deck-pile"></div>
+          <div id="board-area"></div>
+        </section>
+
+        <div id="player-area">
+          <div id="message" role="status" aria-live="polite"></div>
+          <div class="section">
+            <h2 class="section-title">手牌</h2>
+            <p class="section-hint">先选手牌，再选敌人攻城。</p>
+            <div id="hand-container"></div>
+            <div id="mulligan-bar" style="display:none;">
+              <button id="btn-mulligan" onclick="doMulligan()">重调手牌 (剩余 <span id="mulligan-left">2</span> 次)</button>
+              <button onclick="confirmMulligan()">确认手牌</button>
             </div>
           </div>
-          <div class="pile-box">
-            <div class="pile-label">弃牌堆</div>
-            <div class="pile-cards" id="discard-pile"></div>
+
+          <div class="section">
+            <h2 class="section-title">物资与牌堆</h2>
+            <div id="piles-area">
+              <div class="pile-box">
+                <div class="pile-label">物资牌堆</div>
+                <div class="pile-cards" id="supply-pile"></div>
+              </div>
+              <div class="pile-box">
+                <div class="pile-label">牌库</div>
+                <div class="pile-cards">
+                  <div class="pile-card back" id="deck-pile"></div>
+                </div>
+              </div>
+              <div class="pile-box">
+                <div class="pile-label">弃牌堆</div>
+                <div class="pile-cards" id="discard-pile"></div>
+              </div>
+              <div class="pile-box" id="time-pile-box" style="display:none;">
+                <div class="pile-label">时间牌库 <span id="time-count">0</span></div>
+                <div class="pile-cards" id="time-pile"></div>
+              </div>
+            </div>
           </div>
-          <div class="pile-box" id="time-pile-box" style="display:none;">
-            <div class="pile-label">时间牌库 <span id="time-count">0</span></div>
-            <div class="pile-cards" id="time-pile"></div>
+
+          <div class="section" id="skill-section" style="display:none;">
+            <h2 class="section-title">战术</h2>
+            <p class="section-hint">选择一张物资牌，或用同点数的手牌协同。</p>
+            <div class="action-bar">
+              <button class="skill" onclick="activateSynergy()">协同 (弃2张同点数)</button>
+              <button class="danger" onclick="cancelSkill()">取消</button>
+            </div>
+          </div>
+
+          <div class="action-bar game-actions">
+            <button class="primary" onclick="showSkillPanel()">发动战术</button>
+            <button onclick="showRules()">规则说明</button>
+            <button class="danger" onclick="resetGame()">重新开始</button>
           </div>
         </div>
-      </div>
-
-      <div class="section" id="skill-section" style="display:none;">
-        <div class="section-title">⚡ 战术技能 - 点击物资牌堆中的牌发动对应战术</div>
-        <div class="action-bar">
-          <button class="skill" onclick="activateSynergy()">🔄 协同 (弃2张同点数)</button>
-          <button class="danger" onclick="cancelSkill()">❌ 取消</button>
-        </div>
-      </div>
-
-      <div id="message" role="status" aria-live="polite"></div>
-      <div class="action-bar">
-        <button onclick="showSkillPanel()">⚡ 发动战术</button>
-        <button onclick="showRules()">📖 规则说明</button>
-        <button class="danger" onclick="resetGame()">🔄 重新开始</button>
       </div>
     </div>
-  </div>
+  </main>
 
   <!-- 弹窗 -->
   <div id="modal-overlay">
-    <div id="modal">
+    <div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <h2 id="modal-title">标题</h2>
-      <p id="modal-text">内容</p>
+      <div id="modal-text"></div>
       <div id="modal-extra"></div>
       <button onclick="closeModal()">确定</button>
     </div>

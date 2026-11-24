@@ -1,29 +1,24 @@
-import { SUIT_SYMBOLS, rankName, isRed } from './config.js';
+import { SUIT_SYMBOLS, SUIT_NAMES, rankName, isRed } from './config.js';
 import { isSelectable } from './core.js';
 
 export function renderEnemies() {
   const board = document.getElementById('board-area');
   board.innerHTML = '';
-  const style = getComputedStyle(document.documentElement);
-  const cardW = parseInt(style.getPropertyValue('--board-card-w')) || 72;
-  const gap = parseInt(style.getPropertyValue('--board-gap')) || 18;
-  const baseX = parseInt(style.getPropertyValue('--board-base-x')) || 30;
-  const stepY = parseInt(style.getPropertyValue('--board-step-y')) || 52;
-  const baseY = 0;
-
   for (const enemy of window.gameState.enemies) {
     if (enemy.defeated) continue;
-    const el = document.createElement('div');
+    const el = document.createElement('button');
+    el.type = 'button';
     el.className = 'enemy-card';
     if (enemy.revealed) {
       el.classList.add('front');
       if (isRed(enemy.suit)) el.classList.add('red');
-      el.innerHTML = `<div class="rank">${rankName(enemy.rank)}</div><div class="suit">${SUIT_SYMBOLS[enemy.suit]}</div>`;
+      el.innerHTML = `<span class="rank">${rankName(enemy.rank)}</span><span class="suit">${SUIT_SYMBOLS[enemy.suit]}</span>`;
     } else {
       el.classList.add('back');
-      el.textContent = '?';
+      el.setAttribute('aria-label', '暗置敌人');
     }
 
+    if (enemy.revealed) el.setAttribute('aria-label', `${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}敌人`);
     const selectable = isSelectable(enemy);
     if (selectable && window.gameState.phase === 'playing') {
       const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
@@ -54,8 +49,10 @@ export function renderEnemies() {
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'feint_reveal' && selectable && !enemy.revealed && enemy.id !== window.gameState._feintDarkened?.id) el.classList.add('selectable');
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'tactician_bonus' && selectable && !enemy.revealed) el.classList.add('selectable');
 
-    el.style.left = (baseX + enemy.pos * (cardW / 2 + gap / 2)) + 'px';
-    el.style.top = (baseY + enemy.layer * stepY) + 'px';
+    // 保持原有牌阵的相对间距，让棋盘可以随屏幕宽度缩放。
+    el.style.left = `${enemy.pos * (45 / 342) * 100}%`;
+    el.style.top = `calc(${enemy.layer} * var(--row-step))`;
+    el.tabIndex = el.classList.contains('selectable') ? 0 : -1;
     el.onclick = () => window.onEnemyClick(enemy.id);
     board.appendChild(el);
   }
@@ -63,12 +60,14 @@ export function renderEnemies() {
 
 export function renderHand() {
   const container = document.getElementById('hand-container');
+  const focusedIndex = Array.from(container.children).indexOf(document.activeElement);
   container.innerHTML = '';
   window.gameState.hand.forEach((card, idx) => {
-    const el = document.createElement('div');
+    const el = document.createElement('button');
+    el.type = 'button';
     el.className = 'hand-card';
     if (isRed(card.suit)) el.classList.add('red');
-    el.innerHTML = `<div class="rank">${rankName(card.rank)}</div><div class="suit">${SUIT_SYMBOLS[card.suit]}</div>`;
+    el.innerHTML = `<span class="rank">${rankName(card.rank)}</span><span class="suit">${SUIT_SYMBOLS[card.suit]}</span>`;
     if (window.gameState.selectedHand === idx) el.classList.add('selected');
     if (window.gameState.phase === 'synergy') {
       const selected = window.gameState.synergyCards.find(c => c.idx === idx);
@@ -77,7 +76,10 @@ export function renderHand() {
     if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'assault_dark' && window.gameState._assaultDarkHand === idx) {
       el.classList.add('synergy-target');
     }
+    el.setAttribute('aria-label', `${SUIT_NAMES[card.suit]}${rankName(card.rank)}手牌`);
+    el.setAttribute('aria-pressed', String(el.matches('.selected, .synergy-target')));
     el.onclick = () => window.onHandCardClick(idx);
     container.appendChild(el);
   });
+  container.children[focusedIndex]?.focus({ preventScroll: true });
 }

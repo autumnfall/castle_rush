@@ -72,7 +72,7 @@ test('补给技能只推进一个阶段且不允许在侦查阶段攻城', async
     supply: [makeCard('hearts', 3)],
   });
   const before = await page.evaluate(() => ({ turn: window.gameState.turn, hand: window.gameState.hand.length }));
-  await page.getByRole('button', { name: '⚡ 发动战术', exact: true }).click();
+  await page.getByRole('button', { name: '发动战术', exact: true }).click();
   await page.locator('#supply-pile .pile-card').click();
   expect(await page.evaluate(() => window.gameState.turnPhase)).toBe('scout');
   expect(await page.evaluate(() => window.gameState.turn)).toBe(before.turn + 1);
@@ -85,7 +85,7 @@ test('补给技能只推进一个阶段且不允许在侦查阶段攻城', async
 test('技能选择期间不能跳过阶段，错误花色不会消耗物资', async ({ page }) => {
   await start(page);
   await patchGameState(page, { supply: [makeCard('hearts', 3)], turnPhase: 'scout' });
-  await page.getByRole('button', { name: '⚡ 发动战术', exact: true }).click();
+  await page.getByRole('button', { name: '发动战术', exact: true }).click();
   await page.click('#btn-skip-phase');
   expect(await page.evaluate(() => window.gameState.turnPhase)).toBe('scout');
   await page.locator('#supply-pile .pile-card').click();
@@ -99,7 +99,7 @@ test('协同补给传递选择并抽三张牌', async ({ page }) => {
     hand: [makeCard('hearts', 5), makeCard('diamonds', 5)], supply: [],
     deck: [makeCard('clubs', 1), makeCard('clubs', 2), makeCard('clubs', 3)], discard: [],
   });
-  await page.getByRole('button', { name: '⚡ 发动战术', exact: true }).click();
+  await page.getByRole('button', { name: '发动战术', exact: true }).click();
   await page.getByRole('button', { name: /协同 \(弃2张同点数\)/ }).click();
   await page.locator('.hand-card').first().click();
   await page.locator('.hand-card').nth(1).click();
@@ -117,7 +117,7 @@ test('补给中触发疲劳失败不会重新进入游戏', async ({ page }) => 
     turnPhase: 'supply', deck: [], discard: [makeCard('clubs', 4)],
     reshuffleCount: 1, supply: [makeCard('hearts', 3)],
   });
-  await page.getByRole('button', { name: '⚡ 发动战术', exact: true }).click();
+  await page.getByRole('button', { name: '发动战术', exact: true }).click();
   await page.locator('#supply-pile .pile-card').click();
   expect(await page.evaluate(() => window.gameState.phase)).toBe('gameover');
   await expect(page.locator('#modal-title')).toContainText('疲劳');
@@ -137,7 +137,7 @@ test('战时补给等待玩家选择后才推进城防阶段', async ({ page }) 
     turnPhase: 'supply', supply: [makeCard('hearts', 3)],
     timeDeck: [{ ...makeCard('clubs', 1), revealed: true }],
   });
-  await page.getByRole('button', { name: '⚡ 发动战术', exact: true }).click();
+  await page.getByRole('button', { name: '发动战术', exact: true }).click();
   await page.locator('#supply-pile .pile-card').click();
   expect(await page.evaluate(() => window.gameState.turnPhase)).toBe('supply');
   expect(await page.evaluate(() => window.gameState.phase)).toBe('skill');

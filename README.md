@@ -26,7 +26,7 @@ npm run preview
 
 测试会自动构建 `dist/` 并启动前台预览服务器，结束后自动停止。8080 端口需空闲。测试包括指挥官技能、城防阶段、协同、疲劳、手机布局，以及 `/castle_rush/` 子路径资源加载。
 
-`npm run build` 仅复制 `index.html`、`css/`、`js/` 并生成 `.nojekyll`，产物位于 `dist/`。`npm run preview` 预览该产物，也支持 http://127.0.0.1:8080/castle_rush/ 。开发预览服务仅绑定本机。
+`npm run build` 仅复制 `index.html`、`css/`、`js/`、`assets/` 并生成 `.nojekyll`，产物位于 `dist/`。`npm run preview` 预览该产物，也支持 http://127.0.0.1:8080/castle_rush/ 。开发预览服务仅绑定本机。
 
 ## GitHub Pages
 

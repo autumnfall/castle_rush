@@ -47,19 +47,12 @@ export function renderPiles() {
         el.innerHTML = `<div style="font-weight:bold">${rankName(top.rank)}</div><div>${SUIT_SYMBOLS[top.suit]}</div>`;
       } else {
         el.className = 'pile-card back';
-        el.textContent = '🌙';
+        el.title = '夜晚';
       }
       timePile.appendChild(el);
-      // 牌堆数量小标记
-      const countBadge = document.createElement('div');
-      countBadge.style.cssText = 'position:absolute;bottom:-4px;right:-4px;background:#333;color:#fff;font-size:10px;border-radius:8px;padding:1px 5px;';
-      countBadge.textContent = td.length;
-      timePile.style.position = 'relative';
-      timePile.appendChild(countBadge);
     } else {
       const el = document.createElement('div');
       el.className = 'pile-card back';
-      el.textContent = '?';
       el.title = '暂无时间牌';
       timePile.appendChild(el);
     }
@@ -146,9 +139,6 @@ export function showChoiceModal(title, text, choices, onSelect) {
   choices.forEach(choice => {
     const btn = document.createElement('button');
     btn.textContent = choice.label;
-    btn.style.cssText = 'margin:6px;padding:8px 16px;font-size:14px;cursor:pointer;border-radius:6px;border:1px solid #555;background:#3a4a3a;color:#eee;';
-    btn.onmouseover = () => btn.style.background = '#4a5a4a';
-    btn.onmouseout = () => btn.style.background = '#3a4a3a';
     btn.onclick = () => {
       closeModal();
       onSelect(choice.value);
@@ -185,8 +175,8 @@ export function showRules() {
   html += `<div class="tab-content" id="tab-commander">
     ${Object.entries({...COMMANDERS, ...DEFENSE_COMMANDERS}).map(([key, cmd]) => `
       <h4>${cmd.icon} ${cmd.name}</h4>
-      <div style="color:#aaa;margin-bottom:4px">🎴${cmd.hand} 📦${cmd.supply} 🔄${cmd.mulligan}</div>
-      <div style="font-size:12px;line-height:1.6">${Object.values(cmd.skillDesc).join('<br>')}</div>
+      <div class="commander-stats">🎴${cmd.hand} 📦${cmd.supply} 🔄${cmd.mulligan}</div>
+      <div>${Object.values(cmd.skillDesc).join('<br>')}</div>
     `).join('')}
   </div>`;
 

@@ -50,8 +50,11 @@ window.performAttack = Combat.performAttack;
 // ==================== 模式与指挥官选择 ====================
 export function selectMode(mode) {
   window.gameState.selectedMode = mode;
-  document.querySelectorAll('.mode-card').forEach(el => el.classList.remove('selected'));
-  document.querySelector(`.mode-card[data-mode="${mode}"]`).classList.add('selected');
+  document.querySelectorAll('.mode-card').forEach(el => {
+    const selected = el.dataset.mode === mode;
+    el.classList.toggle('selected', selected);
+    el.setAttribute('aria-pressed', String(selected));
+  });
   const labels = { basic: '基础游戏', commander: '指挥官扩展', defense: '城防扩展', 'commander+defense': '指挥官+城防' };
   document.getElementById('btn-mode-confirm').textContent = `确认选择：${labels[mode]}`;
   document.getElementById('btn-mode-confirm').disabled = false;
@@ -73,13 +76,15 @@ export function showCommanderSelect() {
   list.innerHTML = '';
 
   const addCmd = (key, cmd) => {
-    const el = document.createElement('div');
+    const el = document.createElement('button');
+    el.type = 'button';
     el.className = 'commander-card';
+    el.setAttribute('aria-pressed', 'false');
     el.dataset.key = key;
     el.innerHTML = `
-      <div class="cmd-name">${cmd.icon} ${cmd.name}</div>
-      <div class="cmd-res">🎴${cmd.hand}  📦${cmd.supply}  🔄${cmd.mulligan}</div>
-      <div class="cmd-desc">${cmd.desc}</div>
+      <span class="cmd-name">${cmd.icon} ${cmd.name}</span>
+      <span class="cmd-res">🎴${cmd.hand}  📦${cmd.supply}  🔄${cmd.mulligan}</span>
+      <span class="cmd-desc">${cmd.desc}</span>
     `;
     el.onclick = () => selectCommander(key, cmd, el);
     list.appendChild(el);
@@ -101,11 +106,13 @@ export function showCommanderSelect() {
 
 export function selectCommander(key, cmd, el) {
   window.gameState.selectedCommander = key;
-  document.querySelectorAll('.commander-card').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
+  document.querySelectorAll('.commander-card').forEach(card => {
+    card.classList.toggle('selected', card === el);
+    card.setAttribute('aria-pressed', String(card === el));
+  });
   const detail = document.getElementById('commander-detail');
-  detail.innerHTML = `<b style="color:#ffd700">${cmd.icon} ${cmd.name}</b><br>
-    <span style="color:#aaa">初始手牌 ${cmd.hand} 张 | 初始物资 ${cmd.supply} 张 | 重调 ${cmd.mulligan} 次</span><br><br>
+  detail.innerHTML = `<b>${cmd.icon} ${cmd.name}</b><br>
+    <span class="commander-stats">初始手牌 ${cmd.hand} 张 | 初始物资 ${cmd.supply} 张 | 重调 ${cmd.mulligan} 次</span><br><br>
     ${Object.values(cmd.skillDesc).map(d => `• ${d}`).join('<br>')}`;
   document.getElementById('btn-cmd-confirm').textContent = `确认选择：${cmd.name}`;
   document.getElementById('btn-cmd-confirm').disabled = false;
@@ -305,7 +312,10 @@ export function resetGame() {
   document.getElementById('game-screen').classList.add('hidden');
   document.getElementById('commander-select').classList.add('hidden');
   document.getElementById('mode-select').classList.remove('hidden');
-  document.querySelectorAll('.mode-card').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.mode-card').forEach(el => {
+    el.classList.remove('selected');
+    el.setAttribute('aria-pressed', 'false');
+  });
   document.getElementById('btn-mode-confirm').textContent = '请选择游戏模式';
   document.getElementById('btn-mode-confirm').disabled = true;
 }
