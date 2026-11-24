@@ -322,7 +322,9 @@ button:disabled:not(.enemy-card, .hand-card) { opacity: .52; cursor: not-allowed
 @media (max-width: 520px) and (max-height: 750px) {
   .hand-panel .section-title, .hand-panel .section-hint { display: inline; }
   .hand-panel .section-hint { margin-inline-start: 5px; }
-  #board-area { --row-step: 34px; --card-height: 67px; }
+  #board-area { --row-step: 32px; --card-height: 66px; }
+  .panel-heading { margin-bottom: 5px; }
+  .hand-card { height: 58px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .mode-card, .commander-card, .hand-card { transition: none; }

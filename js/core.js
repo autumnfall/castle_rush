@@ -157,13 +157,11 @@ export function confirmMulligan() {
   if (window.gameState.phase !== 'mulligan') return;
   document.getElementById('mulligan-bar').style.display = 'none';
   window.gameState.phase = 'playing';
-  const cmdName = getCommander() ? getCommander().name : '基础规则';
   if (isDefenseExpansion()) {
     doTimeFlow();
     advanceTurnPhase();
-    window.setMessage(`【${cmdName}】游戏开始！${window.gameState.message}`);
   } else {
-    window.setMessage(`【${cmdName}】游戏开始！点击手牌选中，再点击可选中的敌人进行攻城。`);
+    window.setMessage('选择一张手牌，再点击金边敌牌攻城。');
   }
   window.renderAll();
 }
