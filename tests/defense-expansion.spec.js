@@ -32,6 +32,10 @@ async function setupDefenseCommanderGame(page, commanderKey) {
   await page.waitForSelector('#mulligan-bar', { state: 'hidden' });
 }
 
+test.beforeEach(async ({ page }) => {
+  page.on('pageerror', error => { throw error; });
+});
+
 // ==================== 基础城防系统 ====================
 
 test.describe('城防扩展基础', () => {
@@ -59,7 +63,7 @@ test.describe('城防扩展基础', () => {
     dismissDialogs(page);
     // 构造场景：时间牌为明置 hearts，手牌有 hearts
     // 使用 layer 4 的敌人确保可点击
-    const enemy = makeEnemy('clubs', 5, 4, 0, [50, 50], true);
+    const enemy = makeEnemy('clubs', 5, 4, 0, 1, true);
     await patchGameState(page, {
       turnPhase: 'siege',
       timeDeck: [{ id: 'time1', suit: 'hearts', rank: 7, revealed: true }],
@@ -88,7 +92,7 @@ test.describe('城防扩展基础', () => {
       }
     });
     // 敌人与手牌同点数，攻城会成功
-    const enemy = makeEnemy('clubs', 3, 4, 0, [50, 50], true);
+    const enemy = makeEnemy('clubs', 3, 4, 0, 1, true);
     await patchGameState(page, {
       turnPhase: 'siege',
       timeDeck: [{ id: 'time1', suit: 'hearts', rank: 7, revealed: true }],
@@ -165,7 +169,7 @@ test.describe('闪电战专家', () => {
   test('♣️突袭：击败明置敌人，时间牌≤5时抽牌', async ({ page }) => {
     await setupDefenseCommanderGame(page, 'blitzkrieg');
     acceptDialogs(page);
-    const enemy = makeEnemy('diamonds', 5, 4, 0, [50, 50], true);
+    const enemy = makeEnemy('diamonds', 5, 4, 0, 1, true);
     await patchGameState(page, {
       timeDeck: [makeCard('clubs', 1)],
       supply: [makeCard('clubs', 7)],
@@ -205,8 +209,8 @@ test.describe('持久战专家', () => {
     await setupDefenseCommanderGame(page, 'attrition');
     acceptDialogs(page);
     const enemies = [
-      makeEnemy('hearts', 5, 4, 0, [50, 50], false),
-      makeEnemy('diamonds', 6, 4, 1, [150, 50], false),
+      makeEnemy('hearts', 5, 4, 0, 1, false),
+      makeEnemy('diamonds', 6, 4, 1, 3, false),
     ];
     await patchGameState(page, {
       timeDeck: [{ id: 'time1', suit: 'clubs', rank: 7, revealed: true }],
@@ -227,9 +231,9 @@ test.describe('持久战专家', () => {
     await setupDefenseCommanderGame(page, 'attrition');
     acceptDialogs(page);
     const enemies = [
-      makeEnemy('hearts', 5, 4, 0, [50, 50], true),
-      makeEnemy('hearts', 6, 4, 1, [150, 50], true),
-      makeEnemy('diamonds', 7, 4, 2, [250, 50], true),
+      makeEnemy('hearts', 5, 4, 0, 1, true),
+      makeEnemy('hearts', 6, 4, 1, 3, true),
+      makeEnemy('diamonds', 7, 4, 2, 5, true),
     ];
     await patchGameState(page, {
       timeDeck: [{ id: 'time1', suit: 'hearts', rank: 7, revealed: true }],

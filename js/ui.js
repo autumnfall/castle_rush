@@ -126,6 +126,7 @@ export function showDiscardModal() {
 }
 
 export function showModal(title, text) {
+  document.querySelector('#modal > button').hidden = false;
   document.getElementById('modal-title').textContent = title;
   document.getElementById('modal-text').innerHTML = text;
   document.getElementById('modal-extra').innerHTML = '';
@@ -137,6 +138,7 @@ export function closeModal() {
 }
 
 export function showChoiceModal(title, text, choices, onSelect) {
+  document.querySelector('#modal > button').hidden = true;
   document.getElementById('modal-title').textContent = title;
   document.getElementById('modal-text').innerHTML = text;
   const extra = document.getElementById('modal-extra');

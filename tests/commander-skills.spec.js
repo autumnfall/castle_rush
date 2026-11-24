@@ -17,6 +17,10 @@ import {
 } from './helpers.js';
 
 // ==================== 新手指挥官 ====================
+test.beforeEach(async ({ page }) => {
+  page.on('pageerror', error => { throw error; });
+});
+
 test.describe('新手指挥官', () => {
   test.beforeEach(async ({ page }) => {
     await setupCommanderGame(page, 'novice');

@@ -4,15 +4,18 @@
   "description": "城堡突袭 - 网页卡牌游戏",
   "type": "module",
   "scripts": {
-    "start": "./start.sh",
+    "start": "node scripts/serve.mjs",
     "stop": "./stop.sh",
     "test": "playwright test",
-    "test:ui": "playwright test --ui"
-  },
-  "dependencies": {
-    "playwright": "^1.60.0"
+    "test:ui": "playwright test --ui",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/serve.mjs dist"
   },
   "devDependencies": {
-    "@playwright/test": "^1.60.0"
+    "@playwright/test": "^1.60.0",
+    "playwright": "^1.60.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

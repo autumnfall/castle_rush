@@ -14,3 +14,8 @@ npm-debug.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Generated site and browser reports
+dist/
+test-results/
+playwright-report/

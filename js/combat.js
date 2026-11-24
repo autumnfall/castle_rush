@@ -1,5 +1,5 @@
 import { SUIT_NAMES, rankName } from './config.js';
-import { computeCoverage, checkGameOver, draw } from './core.js';
+import { computeCoverage, checkGameOver, draw, advanceTurnPhase } from './core.js';
 import { getCommander, COMMANDERS } from './commanders.js';
 
 // ==================== 核心攻城 ====================
@@ -23,6 +23,12 @@ export function finishAttack() {
   }
   window.gameState._skipHandRemove = false;
   window.gameState.selectedHand = null;
+  computeCoverage();
+  checkGameOver();
+  if (window.gameState.phase === 'gameover') {
+    window.renderAll();
+    return;
+  }
   const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
   if (isDef) {
     // 城防扩展：标记本阶段已攻城，若无可再做之事则自动推进阶段
@@ -30,14 +36,12 @@ export function finishAttack() {
     window.gameState.phaseActions.attack = true;
     const hasClubs = !window.gameState.phaseActions.clubsSkill && window.gameState.supply.some(c => c.suit === 'clubs');
     if (!hasClubs) {
-      Core.advanceTurnPhase();
+      advanceTurnPhase();
       return;
     }
   } else {
     window.gameState.turn++;
   }
-  computeCoverage();
-  checkGameOver();
   window.renderAll();
 }
 

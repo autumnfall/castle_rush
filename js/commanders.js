@@ -287,7 +287,7 @@ export const COMMANDERS = {
           window.finishSkill();
         });
       });
-      return true;
+      return false; // 等待弹窗选项完成后再结算阶段
     },
     onSkillDiamonds: (card) => {
       const confirmed = confirm(`是否发动 ♦️ 谨慎侦查？\n将弃掉物资牌：♦️${rankName(card.rank)}\n效果：选择暗置敌人翻明置，弃牌堆顶一张，花色一致可继续，最后用物资交换最后一次弃牌。`);

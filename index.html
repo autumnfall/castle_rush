@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>城堡突袭</title>
+  <link rel="icon" href="data:,">
+  <meta name="description" content="城堡突袭：单人策略卡牌游戏，包含基础规则、指挥官和城防扩展。">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -101,14 +103,14 @@
 
       <div class="section" id="skill-section" style="display:none;">
         <div class="section-title">⚡ 战术技能 - 点击物资牌堆中的牌发动对应战术</div>
-        <div id="action-bar">
+        <div class="action-bar">
           <button class="skill" onclick="activateSynergy()">🔄 协同 (弃2张同点数)</button>
           <button class="danger" onclick="cancelSkill()">❌ 取消</button>
         </div>
       </div>
 
-      <div id="message"></div>
-      <div id="action-bar">
+      <div id="message" role="status" aria-live="polite"></div>
+      <div class="action-bar">
         <button onclick="showSkillPanel()">⚡ 发动战术</button>
         <button onclick="showRules()">📖 规则说明</button>
         <button class="danger" onclick="resetGame()">🔄 重新开始</button>

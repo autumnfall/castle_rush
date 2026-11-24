@@ -1,5 +1,5 @@
 import { SUIT_NAMES, SUIT_SYMBOLS, rankName, isRed } from './config.js';
-import { draw, computeCoverage, checkGameOver, isSelectable } from './core.js';
+import { draw, computeCoverage, checkGameOver, isSelectable, advanceTurnPhase } from './core.js';
 import { getCommander, COMMANDERS } from './commanders.js';
 
 // ==================== 技能系统 ====================
@@ -18,6 +18,7 @@ export function showSkillPanel() {
 }
 
 export function cancelSkill() {
+  if (!['skill', 'synergy'].includes(window.gameState.phase)) return;
   // 处理攻击/防御流程中触发的异步子模式，取消后需正确结束攻击流程
   const asyncModes = ['breakthrough_reveal', 'tactician_bonus', 'feint', 'feint_reveal'];
   if (window.gameState.phase === 'skill' && asyncModes.includes(window.gameState.skillMode)) {
@@ -28,13 +29,7 @@ export function cancelSkill() {
     window.gameState.skillMode = null;
     document.getElementById('skill-section').style.display = 'none';
     window.setMessage('已取消，回到正常阶段。');
-    const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
-    if (isDef) {
-      // 城防扩展：取消后回到当前阶段，不推进
-      window.renderAll();
-    } else {
-      window.finishAttack();
-    }
+    window.finishAttack();
     return;
   }
   window.gameState.phase = 'playing';
@@ -50,6 +45,11 @@ export function onSupplyClick(card) {
   // 城防扩展：阶段行为次数限制
   const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
   if (isDef) {
+    const allowedSuit = { scout: 'diamonds', siege: 'clubs', supply: 'hearts' }[window.gameState.turnPhase];
+    if (card.suit !== 'spades' && card.suit !== allowedSuit) {
+      window.setMessage('当前阶段不能使用该花色战术，请使用对应阶段的技能。');
+      return;
+    }
     window.gameState.phaseActions = window.gameState.phaseActions || {};
     if (card.suit === 'diamonds' && window.gameState.phaseActions.diamondsSkill) {
       window.setMessage('🕵️ 本阶段已经使用过♦️技能！'); return;
@@ -64,16 +64,16 @@ export function onSupplyClick(card) {
   const cmd = getCommander() || COMMANDERS.novice;
   if (card.suit === 'hearts') {
     const done = cmd.onSkillHearts(card);
-    if (done) { finishSkill(); }
+    if (done && window.gameState.phase === 'skill') { finishSkill(); }
   } else if (card.suit === 'diamonds') {
     const done = cmd.onSkillDiamonds(card);
-    if (done) { finishSkill(); }
+    if (done && window.gameState.phase === 'skill') { finishSkill(); }
   } else if (card.suit === 'clubs') {
     const done = cmd.onSkillClubs(card);
-    if (done) { finishSkill(); }
+    if (done && window.gameState.phase === 'skill') { finishSkill(); }
   } else if (card.suit === 'spades') {
     const done = cmd.onSkillSpades();
-    if (done) { finishSkill(); }
+    if (done && window.gameState.phase === 'skill') { cancelSkill(); }
   }
 }
 
@@ -84,6 +84,7 @@ export function useSupplyCard(card, callback) {
 }
 
 export function finishSkill() {
+  if (!['skill', 'synergy'].includes(window.gameState.phase)) return;
   window.gameState.phase = 'playing';
   window.gameState.skillMode = null;
   window.gameState._revealedCount = 0;
@@ -93,6 +94,12 @@ export function finishSkill() {
   window.gameState._tacticianBonusMode = undefined;
   window.gameState._feintDarkened = undefined;
   document.getElementById('skill-section').style.display = 'none';
+  computeCoverage();
+  checkGameOver();
+  if (window.gameState.phase === 'gameover') {
+    window.renderAll();
+    return;
+  }
   // 城防扩展：标记本阶段已使用对应技能，若无可再做之事则自动推进阶段
   const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
   let shouldAdvance = false;
@@ -111,7 +118,7 @@ export function finishSkill() {
     }
   }
   if (shouldAdvance) {
-    Core.advanceTurnPhase();
+    advanceTurnPhase();
   } else {
     window.renderAll();
   }
@@ -519,7 +526,11 @@ export function handleSkillEnemySelect(enemy) {
 
 // ==================== 协同 ====================
 export function activateSynergy() {
-  if (window.gameState.phase !== 'skill') return;
+  if (window.gameState.phase !== 'skill' || window.gameState.skillMode !== 'select_supply') return;
+  if (window.isDefenseExpansion() && window.gameState.turnPhase === 'siege' && window.gameState.phaseActions.clubsSkill) {
+    window.setMessage('⚔️ 本阶段已经使用过♣️技能！');
+    return;
+  }
   if (window.gameState.hand.length < 2) { window.setMessage('手牌不足2张，无法协同！'); return; }
   window.gameState.phase = 'synergy';
   window.gameState.synergyCards = [];
@@ -545,11 +556,15 @@ export function handleSynergyHandSelect(idx) {
 }
 
 export function showSynergyChoice() {
-  const choices = [
-    { suit: 'hearts', label: '♥️ 补给 (抽3张)' },
-    { suit: 'diamonds', label: '♦️ 侦查 (翻2张)' },
-    { suit: 'clubs', label: '♣️ 强攻 (击败明置)' }
+  let choices = [
+    { value: 'hearts', label: '♥️ 补给 (抽3张)' },
+    { value: 'diamonds', label: '♦️ 侦查 (翻2张)' },
+    { value: 'clubs', label: '♣️ 强攻 (击败明置)' }
   ];
+  if (window.isDefenseExpansion()) {
+    const suit = { scout: 'diamonds', siege: 'clubs', supply: 'hearts' }[window.gameState.turnPhase];
+    choices = choices.filter(choice => choice.value === suit);
+  }
   window.showChoiceModal('🔄 协同成功', '请选择要发动的技能：', choices, (suit) => {
     const idxs = window.gameState.synergyCards.map(c => c.idx).sort((a, b) => b - a);
     for (const i of idxs) window.gameState.discard.push(window.gameState.hand.splice(i, 1)[0]);
@@ -561,14 +576,12 @@ export function showSynergyChoice() {
       const drawn = draw(3);
       window.gameState.hand.push(...drawn);
       window.setMessage(`🔄 协同♥️ 补给！抽了 ${drawn.length} 张牌。`);
-      window.gameState.phase = 'playing';
-      window.renderAll();
+      finishSkill();
     } else if (suit === 'diamonds') {
       const revealables = window.gameState.enemies.filter(e => !e.defeated && !e.revealed && isSelectable(e));
       if (revealables.length === 0) {
         window.setMessage('🔄 协同♦️ 侦查发动！但没有可选中的暗置牌。');
-        window.gameState.phase = 'playing';
-        window.renderAll();
+        finishSkill();
         return;
       }
       window.gameState._maxReveal = Math.min(2, revealables.length);
@@ -580,8 +593,7 @@ export function showSynergyChoice() {
       const attackables = window.gameState.enemies.filter(e => !e.defeated && e.revealed && isSelectable(e));
       if (attackables.length === 0) {
         window.setMessage('🔄 协同♣️ 强攻发动！但没有可击败的明置敌人。');
-        window.gameState.phase = 'playing';
-        window.renderAll();
+        finishSkill();
         return;
       }
       window.gameState.phase = 'skill';

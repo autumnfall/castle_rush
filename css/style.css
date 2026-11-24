@@ -97,7 +97,7 @@ h2 { font-size: 20px; margin-bottom: 12px; color: #ffd700; text-align: center; }
 .suit-icon { font-size: 16px; }
 
 /* 游戏主界面 */
-#game-screen { width: 100%; max-width: 600px; }
+#game-screen { width: 100%; max-width: 760px; min-width: 0; }
 
 /* 牌阵区域 */
 :root {
@@ -257,7 +257,7 @@ h2 { font-size: 20px; margin-bottom: 12px; color: #ffd700; text-align: center; }
 }
 
 /* 按钮 */
-#action-bar {
+.action-bar {
   display: flex;
   gap: 10px;
   justify-content: center;
@@ -462,3 +462,7 @@ button.gold:hover { background: #aa9a3a; }
     height: 62px;
   }
 }
+
+/* Keep resource piles inside narrow screens as supplies accumulate. */
+#piles-area { flex-wrap: wrap; }
+:focus-visible { outline: 3px solid #ffd700; outline-offset: 3px; }

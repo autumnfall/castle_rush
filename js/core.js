@@ -139,6 +139,7 @@ export function showMulligan() {
 }
 
 export function doMulligan() {
+  if (window.gameState.phase !== 'mulligan') return;
   if (window.gameState.mulliganCount >= window.gameState.mulliganLimit) return;
   window.gameState.deck.push(...window.gameState.hand);
   window.gameState.hand = [];
@@ -153,6 +154,7 @@ export function doMulligan() {
 }
 
 export function confirmMulligan() {
+  if (window.gameState.phase !== 'mulligan') return;
   document.getElementById('mulligan-bar').style.display = 'none';
   window.gameState.phase = 'playing';
   const cmdName = getCommander() ? getCommander().name : '基础规则';
@@ -168,6 +170,7 @@ export function confirmMulligan() {
 
 // ==================== 胜负判定 ====================
 export function checkGameOver() {
+  if (window.gameState.phase === 'gameover') return;
   const remaining = window.gameState.enemies.filter(e => !e.defeated);
   if (remaining.length === 0) {
     window.gameState.phase = 'gameover';
@@ -184,7 +187,7 @@ export function checkGameOver() {
 
 // ==================== 城防扩展：时间流逝 ====================
 export function doTimeFlow() {
-  if (!isDefenseExpansion()) return;
+  if (!isDefenseExpansion() || window.gameState.phase === 'gameover') return;
   const td = window.gameState.timeDeck;
   const top = td.length > 0 ? td[td.length - 1] : null;
   if (top && top.revealed) {
@@ -202,7 +205,7 @@ export function doTimeFlow() {
 
 // ==================== 城防扩展：阶段推进 ====================
 export function advanceTurnPhase() {
-  if (!isDefenseExpansion()) return;
+  if (!isDefenseExpansion() || window.gameState.phase !== 'playing') return;
   const phases = ['time_flow', 'scout', 'siege', 'supply'];
   const idx = phases.indexOf(window.gameState.turnPhase);
   if (idx < 0) return;
@@ -215,6 +218,7 @@ export function advanceTurnPhase() {
     // supply 结束 → 下一回合，自动执行时间流逝并进入 scout
     window.gameState.turn++;
     doTimeFlow();
+    if (window.gameState.phase === 'gameover') return;
     window.gameState.turnPhase = 'scout';
     window.setMessage(`⏳ 第${window.gameState.turn}回合开始 - 🕵️ 侦查阶段：可使用♦️技能`);
   }

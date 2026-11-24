@@ -255,6 +255,10 @@ export function onEnemyClick(enemyId) {
     const handCard = window.gameState.hand[window.gameState.selectedHand];
     // 城防扩展：白天城防限制检查
     const isDef = (window.gameState.selectedMode === 'defense' || window.gameState.selectedMode === 'commander+defense');
+    if (isDef && window.gameState.turnPhase !== 'siege') {
+      window.setMessage('请在攻城阶段进行攻城。');
+      return;
+    }
     if (isDef && window.gameState.turnPhase === 'siege') {
       if (window.gameState.phaseActions?.attack) {
         window.setMessage('⚔️ 本阶段已经进行过攻城，无法再次攻城！');
@@ -270,6 +274,7 @@ export function onEnemyClick(enemyId) {
           const bypass = confirm(`🏛️ 城防限制：白天不能使用 ${handCard.suit} 手牌攻城！\n是否弃掉 ${bypassCard.suit}${bypassCard.rank} 来忽略城防？`);
           if (bypass) {
             window.gameState.discard.push(window.gameState.hand.splice(bypassIdx, 1)[0]);
+            if (bypassIdx < window.gameState.selectedHand) window.gameState.selectedHand--;
             window.setMessage('已弃牌忽略城防，继续攻城！');
             window.renderAll();
           } else {
@@ -290,6 +295,11 @@ export function onEnemyClick(enemyId) {
 
 // ==================== 重置 ====================
 export function resetGame() {
+  UI.closeModal();
+  document.getElementById('skill-section').style.display = 'none';
+  document.getElementById('btn-cmd-confirm').disabled = true;
+  document.getElementById('btn-cmd-confirm').textContent = '请选择指挥官';
+  document.getElementById('commander-detail').textContent = '';
   window.gameState.selectedCommander = null;
   window.gameState.selectedMode = null;
   document.getElementById('game-screen').classList.add('hidden');
