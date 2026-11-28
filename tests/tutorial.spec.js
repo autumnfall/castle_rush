@@ -11,7 +11,8 @@ test('首次邀请可跳过，刷新后仍可从首页直接开始教程', async
   expect(await page.evaluate(()=>window.gameState.selectedMode)).toBe('basic');
 });
 
-test('同一副52张牌从重调、试攻、花色与点数匹配、四种战术和协同打到胜利', async ({page}) => {
+for (const choice of ['继续当前牌局','开启新游戏']) {
+test('四种战术和协同结算后可以' + choice, async ({page}) => {
   await page.setViewportSize({width:390,height:844});
   const prompts = [];
   page.on('dialog', async dialog => { prompts.push(dialog.message()); await dialog.accept(); });
@@ -22,7 +23,7 @@ test('同一副52张牌从重调、试攻、花色与点数匹配、四种战术
     const g = window.gameState;
     const keys = arr => arr.map(c => c.suit + c.rank);
     const cards = [...g.hand,...g.deck,...g.discard,...g.supply,...g.enemies.filter(e=>!e.defeated)];
-    return {index:g.tutorial.index, hand:keys(g.hand), discarded:keys(g.discard), supply:keys(g.supply),
+    return {index:g.tutorial?.index, hand:keys(g.hand), discarded:keys(g.discard), supply:keys(g.supply),
       alive:g.enemies.filter(e=>!e.defeated).length, deck:g.deck.length, ids:cards.map(c=>c.id).sort(),
       faces:new Set(keys(cards)).size, layers:[0,1,2,3,4].map(n=>g.enemies.filter(e=>e.layer===n).length)};
   });
@@ -35,7 +36,7 @@ test('同一副52张牌从重调、试攻、花色与点数匹配、四种战术
   for (let clicks=0;clicks<120;clicks++) {
     const before = await state();
     expect(before.ids).toEqual(opening.ids);
-    if (!before.alive) break;
+    if (before.index === 10) break;
     if (!seen.has(before.index)) {
       seen.add(before.index);
       if (before.index === 1) expect(new Set(before.hand.map(c=>c.replace(/\d+$/,''))).size).toBe(4);
@@ -56,7 +57,6 @@ test('同一副52张牌从重调、试攻、花色与点数匹配、四种战术
       }
       if (before.index === 6) { expect(before.supply).toContain('hearts7'); expect(before.discarded).toContain('hearts5'); }
       if (before.index === 9) { expect(before.hand).toContain('hearts2'); expect(before.discarded).toContain('spades11'); }
-      if (before.index === 10) expect(before.discarded).toEqual(expect.arrayContaining(['clubs5','diamonds5']));
     }
     if (await page.locator('#modal-overlay.show').count()) {
       await page.getByRole('button',{name:/补给.*抽3张/}).click();
@@ -66,8 +66,27 @@ test('同一副52张牌从重调、试攻、花色与点数匹配、四种战术
       await targets.first().click();
     }
   }
-  await expect(page.locator('#modal-title')).toContainText('胜利');
-  expect((await state()).alive).toBe(0);
-  expect(seen.size).toBe(26);
+  await expect(page.locator('#modal-title')).toHaveText('基础教程完成');
+  const checkpoint = await state();
+  expect(checkpoint.discarded).toEqual(expect.arrayContaining(['clubs5','diamonds5']));
+  expect(checkpoint.alive).toBe(13);
+  expect(seen.size).toBe(10);
   expect(prompts.some(text=>text.includes('防御物资'))).toBeTruthy();
+  await page.getByRole('button',{name:choice}).click();
+  await expect(page.locator('#tutorial-panel')).toBeHidden();
+  await expect(page.locator('.tutorial-target')).toHaveCount(0);
+  const after = await state();
+  if (choice === '开启新游戏') {
+    await expect(page.locator('#mulligan-bar')).toBeVisible();
+    expect(after).toMatchObject({alive:16,deck:29,discarded:[]});
+    expect(after.ids).not.toEqual(opening.ids);
+  } else {
+    expect(after).toEqual({...checkpoint,index:undefined});
+    // Attack a different enemy from the guided route using a freely chosen hand.
+    await page.getByRole('button',{name:'红桃2手牌'}).click();
+    await page.locator('.enemy-card.selectable.back').last().click();
+    expect((await state()).alive).toBe(12);
+    await expect(page.locator('#modal-overlay')).not.toHaveClass(/show/);
+  }
 });
+}

@@ -25,7 +25,7 @@ function renderAll() {
   UI.updateInfo();
   Constructed.render();
   Rogue.render();
-  Tutorial.render();
+  Tutorial.render(startGame);
   if (window.gameState.message) {
     document.getElementById('message').textContent = window.gameState.message;
   }
