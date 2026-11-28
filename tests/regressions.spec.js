@@ -3,7 +3,7 @@ import { patchGameState, makeCard, makeEnemy, acceptDialogs } from './helpers.js
 
 async function start(page, mode = 'defense') {
   await page.goto('/castle_rush/');
-  await page.click(`[data-mode="${mode}"]`);
+  await page.evaluate(mode => window.selectMode(mode),mode);
   await page.click('#btn-mode-confirm');
   await page.getByRole('button', { name: /确认手牌/ }).click();
 }
@@ -19,7 +19,7 @@ test('项目子路径下所有模式均可启动', async ({ page }) => {
     const onResponse = response => { if (response.status() >= 400) failed.push(response.url()); };
     page.on('response', onResponse);
     await page.goto('/castle_rush/');
-    await page.click(`[data-mode="${mode}"]`);
+    await page.evaluate(mode => window.selectMode(mode),mode);
     await page.click('#btn-mode-confirm');
     if (mode.includes('commander')) {
       await page.locator('[data-key="novice"]').click();
@@ -150,7 +150,7 @@ test('桌面并排显示牌桌与指令，窄屏手牌在面板内滚动', async
 test('组合模式在短屏首屏显示棋盘、手牌和操作', async ({ page }) => {
   await page.setViewportSize({ width: 768, height: 720 });
   await page.goto('/castle_rush/');
-  await page.locator('[data-mode="commander+defense"]').click();
+  await page.evaluate(() => window.selectMode('commander+defense'));
   await page.click('#btn-mode-confirm');
   await page.locator('[data-key="novice"]').click();
   await page.click('#btn-cmd-confirm');

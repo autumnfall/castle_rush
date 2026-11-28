@@ -296,7 +296,7 @@ button:disabled:not(.enemy-card, .hand-card) { opacity: .52; cursor: not-allowed
   .hand-card .suit, .enemy-card .suit { font-size: 1.3rem; }
   .game-actions { grid-area: actions; }
   .resource-panel { grid-area: resources; }
-  #skill-section { grid-area: skill; }
+  #skill-section, #constructed-panel { grid-area: skill; }
   #commander-bar { grid-area: commander; }
   #mulligan-bar { margin-top: 4px; justify-content: flex-start; }
 }
@@ -332,3 +332,35 @@ button:disabled:not(.enemy-card, .hand-card) { opacity: .52; cursor: not-allowed
   .mode-card, .commander-card, .hand-card { transition: none; }
   .mode-card:hover, .commander-card:hover, .hand-card:hover { transform: none; }
 }
+
+#constructed-panel button {
+  display: block;
+  width: 100%;
+  margin-top: .45rem;
+  text-align: left;
+  white-space: normal;
+}
+#constructed-panel p { margin: .5rem 0; }
+
+@media (min-width: 801px) {
+  .mode-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+#deck-builder fieldset { min-width: 0; margin: 1.4rem 0; padding: 0; border: 0; }
+#deck-builder legend { margin-bottom: .6rem; font: 700 1.15rem var(--serif); color: var(--gold); }
+.builder-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: .65rem; }
+.builder-card { display: grid; align-content: start; gap: .5rem; padding: .85rem; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.builder-card small { color: var(--muted); }
+.builder-card:has(input:checked), .builder-card:has(option:checked:not([value="0"])) { border-color: var(--gold); }
+.builder-card select { justify-self: start; font: inherit; min-height: 2.5rem; padding-inline: .65rem; }
+.builder-actions { position: sticky; bottom: 0; padding: .75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem; background: var(--panel); }
+.builder-actions strong { color: var(--gold); }
+.pile-order { padding-inline-start: 2.5rem; margin: .75rem 0; }
+.pile-order li { border-bottom: 1px solid var(--line); padding: .3rem 0; }
+
+#builder-cards details { margin-block: .65rem; }
+#builder-cards summary { cursor: pointer; padding: .65rem; color: var(--gold); }
+
+#rogue-panel details, #rogue-panel button { margin-top: .4rem; }
+#rogue-panel summary { cursor: pointer; }
+@media (max-width:720px) { .battlefield:has(#rogue-panel:not(.hidden)) { grid-template-areas: "notice" "board" "hand" "actions" "resources" "skill" "rogue" "commander"; } #rogue-panel { grid-area: rogue; } }

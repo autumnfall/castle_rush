@@ -112,10 +112,19 @@ export function setMessage(msg) {
 }
 
 export function showDiscardModal() {
-  if (window.gameState.discard.length === 0) return;
-  const cards = window.gameState.discard.slice().reverse();
-  const html = cards.map((c, i) => `${i === 0 ? '📌 顶部：' : ''}${SUIT_NAMES[c.suit]}${rankName(c.rank)} ${SUIT_SYMBOLS[c.suit]}`).join('<br>');
-  showModal('🗑️ 弃牌堆', `共 ${window.gameState.discard.length} 张（从上到下）：<br><br>${html}`);
+  showOrderedPile('普通弃牌堆', window.gameState.discard, c => SUIT_SYMBOLS[c.suit] + rankName(c.rank));
+}
+
+export function showOrderedPile(title, pile, describe) {
+  const ordered = [...pile].reverse();
+  const rows = ordered.map((card, index) => {
+    const edge = [index === 0 && '堆顶', index === ordered.length - 1 && '堆底'].filter(Boolean).join(' / ');
+    return '<li>' + describe(card) + (edge ? ' · ' + edge : '') + '</li>';
+  });
+  showModal(title, rows.length
+    ? '共 ' + rows.length + ' 张，从堆顶到堆底<ol class="pile-order">' + rows.join('') + '</ol>'
+    : '当前弃牌堆为空。');
+  document.getElementById('modal').scrollTop = 0;
 }
 
 export function showModal(title, text) {
@@ -124,10 +133,12 @@ export function showModal(title, text) {
   document.getElementById('modal-text').innerHTML = text;
   document.getElementById('modal-extra').innerHTML = '';
   document.getElementById('modal-overlay').classList.add('show');
+  if (window.gameState.rogue) document.querySelector('main').inert = true;
 }
 
 export function closeModal() {
   document.getElementById('modal-overlay').classList.remove('show');
+  document.querySelector('main').inert = false;
 }
 
 export function showChoiceModal(title, text, choices, onSelect) {
@@ -146,15 +157,17 @@ export function showChoiceModal(title, text, choices, onSelect) {
     extra.appendChild(btn);
   });
   document.getElementById('modal-overlay').classList.add('show');
+  if (window.gameState.rogue) document.querySelector('main').inert = true;
 }
 
-export function showRules() {
+export function showRules(extraTabs, openingTab) {
   const tabs = [
     { id: 'basic', label: '基础规则' },
     { id: 'commander', label: '指挥官' },
-    { id: 'defense', label: '城防扩展' }
+    { id: 'defense', label: '城防扩展' },
+    ...extraTabs
   ];
-  let html = `<div class="tab-bar">${tabs.map(t => `<button class="tab-btn" onclick="window.switchTab('${t.id}')">${t.label}</button>`).join('')}</div>`;
+  let html = `<div class="tab-bar">${tabs.map(t => `<button class="tab-btn" data-tab="${t.id}" onclick="window.switchTab('${t.id}')">${t.label}</button>`).join('')}</div>`;
 
   html += `<div class="tab-content" id="tab-basic">
     <h4>🎴 基础规则</h4>
@@ -191,16 +204,15 @@ export function showRules() {
     </ul>
   </div>`;
 
+  html += extraTabs.map(t => `<div class="tab-content" id="tab-${t.id}">${t.content}</div>`).join('');
   showModal('📖 游戏规则', html);
-  setTimeout(() => {
-    switchTab('basic');
-  }, 10);
+  switchTab(openingTab);
 }
 
 export function switchTab(id) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.textContent.includes(id === 'basic' ? '基础' : id === 'commander' ? '指挥官' : '城防'));
+  const btn = document.querySelector(`.tab-btn[data-tab="${id}"]`);
   if (btn) btn.classList.add('active');
   const content = document.getElementById('tab-' + id);
   if (content) content.classList.add('active');

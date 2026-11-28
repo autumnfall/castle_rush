@@ -1,3 +1,7 @@
+import * as Rogue from './rogue.js';
+import { presets } from './deck-catalog.js';
+import { openDeckBuilder } from './deck-builder.js';
+import * as Constructed from './constructed.js';
 import { SUIT_NAMES, rankName } from './config.js';
 import { getCommander, COMMANDERS, DEFENSE_COMMANDERS } from './commanders.js';
 import * as Core from './core.js';
@@ -18,6 +22,8 @@ function renderAll() {
   Board.renderHand();
   UI.renderPiles();
   UI.updateInfo();
+  Constructed.render();
+  Rogue.render();
   if (window.gameState.message) {
     document.getElementById('message').textContent = window.gameState.message;
   }
@@ -55,13 +61,24 @@ export function selectMode(mode) {
     el.classList.toggle('selected', selected);
     el.setAttribute('aria-pressed', String(selected));
   });
-  const labels = { basic: '基础游戏', commander: '指挥官扩展', defense: '城防扩展', 'commander+defense': '指挥官+城防' };
+  const labels = { rogue: '创造模式', constructed: '技能构筑', basic: '基础游戏', commander: '指挥官扩展', defense: '城防扩展', 'commander+defense': '指挥官+城防' };
   document.getElementById('btn-mode-confirm').textContent = `确认选择：${labels[mode]}`;
   document.getElementById('btn-mode-confirm').disabled = false;
 }
 
 export function confirmMode() {
   if (!window.gameState.selectedMode) return;
+  if (window.gameState.selectedMode === 'constructed') {
+    UI.showChoiceModal('选择技能预组', '每套共 6 张，含 1 张天赋，恰好 10 费。确认手牌后免费学习第一项技能。', [
+      ...Object.entries(presets).map(([value, deck]) => ({ value, label: deck.name })),
+      {label: '手动构筑', value: 'custom'},
+      {label: '返回', value: null}
+    ], preset => {
+      if (preset === 'custom') openDeckBuilder(startGame);
+      else if (preset) startGame(preset);
+    });
+    return;
+  }
   if (window.gameState.selectedMode.includes('commander')) {
     showCommanderSelect();
   } else {
@@ -130,11 +147,11 @@ export function backToMode() {
   document.getElementById('btn-cmd-confirm').disabled = true;
 }
 
-export function startGame() {
+export function startGame(preset) {
   document.getElementById('mode-select').classList.add('hidden');
   document.getElementById('commander-select').classList.add('hidden');
   document.getElementById('game-screen').classList.remove('hidden');
-  Core.initGame();
+  Core.initGame(preset);
 }
 
 // ==================== 核心交互 ====================
@@ -195,14 +212,10 @@ export function askBlitzkriegDefense(handCard, enemy, defense) {
         msg += `抽了${SUIT_NAMES[drawn[0].suit]}${rankName(drawn[0].rank)}。`;
       }
     }
-    window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
-    enemy.defeated = true;
     window.setMessage(msg);
     window.finishAttack();
   } else {
     window.gameState.discard.push(handCard);
-    window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
-    enemy.defeated = true;
     window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
     window.finishAttack();
   }
@@ -294,7 +307,8 @@ export function onEnemyClick(enemyId) {
         }
       }
     }
-    Combat.performAttack(handCard, enemy);
+    if (window.gameState.constructed) Constructed.attack(enemy);
+    else Combat.performAttack(handCard, enemy);
   } else if (window.gameState.phase === 'skill') {
     Skills.handleSkillEnemySelect(enemy);
   }
@@ -309,6 +323,8 @@ export function resetGame() {
   document.getElementById('commander-detail').textContent = '';
   window.gameState.selectedCommander = null;
   window.gameState.selectedMode = null;
+  window.gameState.constructed = null;
+  window.gameState.rogue = null;
   document.getElementById('game-screen').classList.add('hidden');
   document.getElementById('commander-select').classList.add('hidden');
   document.getElementById('mode-select').classList.remove('hidden');
@@ -334,10 +350,16 @@ window.showSkillPanel = Skills.showSkillPanel;
 window.cancelSkill = Skills.cancelSkill;
 window.activateSynergy = Skills.activateSynergy;
 window.doMulligan = Core.doMulligan;
-window.confirmMulligan = Core.confirmMulligan;
-window.showRules = UI.showRules;
+window.confirmMulligan = () => {
+  if (window.gameState.phase !== 'mulligan') return;
+  Core.confirmMulligan();
+  if (window.gameState.constructed) Constructed.learn();
+};
+window.showRules = () => window.gameState.constructed
+  ? Constructed.showRules() : UI.showRules(Rogue.ruleTabs(), window.gameState.rogue ? 'rogue' : 'basic');
 window.closeModal = UI.closeModal;
 window.showChoiceModal = UI.showChoiceModal;
+window.showDiscardModal = UI.showDiscardModal;
 window.isDefenseExpansion = Core.isDefenseExpansion;
 window.doTimeFlow = Core.doTimeFlow;
 window.advanceTurnPhase = Core.advanceTurnPhase;

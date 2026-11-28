@@ -1,9 +1,11 @@
+import { supplySkill, discardHand } from './rogue.js';
 import { SUIT_NAMES, SUIT_SYMBOLS, rankName, isRed } from './config.js';
 import { draw, computeCoverage, checkGameOver, isSelectable, advanceTurnPhase } from './core.js';
 import { getCommander, COMMANDERS } from './commanders.js';
 
 // ==================== 技能系统 ====================
 export function showSkillPanel() {
+  if (window.gameState.constructed || (window.gameState.rogue && window.gameState.phase !== 'playing')) return;
   if (window.gameState.phase === 'mulligan' || window.gameState.phase === 'gameover') return;
   if (window.gameState.phase === 'skill') return;
   if (window.gameState.supply.length === 0 && window.gameState.hand.length < 2) { window.setMessage('物资牌堆为空且手牌不足2张，无法发动战术技能！'); return; }
@@ -61,6 +63,7 @@ export function onSupplyClick(card) {
       window.setMessage('📦 本阶段已经使用过♥️技能！'); return;
     }
   }
+  if (window.gameState.rogue && supplySkill(card)) return;
   const cmd = getCommander() || COMMANDERS.novice;
   if (card.suit === 'hearts') {
     const done = cmd.onSkillHearts(card);
@@ -125,7 +128,7 @@ export function finishSkill() {
 }
 
 // ==================== 技能子模式处理 ====================
-export function handleSkillEnemySelect(enemy) {
+export async function handleSkillEnemySelect(enemy) {
   // 侦查 - 翻暗置牌
   if (window.gameState.skillMode === 'reveal') {
     if (enemy.revealed) { window.setMessage('该牌已经明置了！'); return; }
@@ -159,7 +162,12 @@ export function handleSkillEnemySelect(enemy) {
     if (window.gameState._assaultDarkHand === undefined) { window.setMessage('请先选择一张手牌弃掉！'); return; }
     // 弃掉选择的手牌
     const handIdx = window.gameState._assaultDarkHand;
-    window.gameState.discard.push(window.gameState.hand.splice(handIdx, 1)[0]);
+    if (window.gameState.rogue) {
+      const g = window.gameState;
+      g.phase = 'rogue-action';
+      await discardHand(g,g.hand[handIdx]);
+      g.phase = 'skill';
+    } else window.gameState.discard.push(window.gameState.hand.splice(handIdx, 1)[0]);
     window.gameState.selectedHand = null;
     // 击败暗置敌人
     window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
@@ -199,6 +207,7 @@ export function handleSkillEnemySelect(enemy) {
     } else {
       // 武器被弃掉（从场上移除进入弃牌堆），目标明置但不进物资
       weapon.defeated = true;
+      if (window.gameState.rogue) window.gameState.rogue.resolved.add(weapon.id);
       window.gameState.discard.push({ ...weapon, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       window.setMessage(`💥 渗透打击失败！${SUIT_NAMES[weapon.suit]}${rankName(weapon.rank)} 被弃掉，${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)} 已明置。`);
     }
@@ -261,6 +270,7 @@ export function handleSkillEnemySelect(enemy) {
     if (!enemy.revealed) { window.setMessage('只能选择明置的敌人！'); return; }
     if (!isSelectable(enemy)) { window.setMessage('该敌人被覆盖，无法选中！'); return; }
     enemy.defeated = true;
+    if (window.gameState.rogue) window.gameState.skillMode = 'harvest_settling';
     setTimeout(() => {
       const discardIt = confirm(`是否将 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)} 弃掉，从牌库顶抽1张牌作为物资？\n（取消则将其作为普通物资）`);
       if (discardIt) {
@@ -565,9 +575,16 @@ export function showSynergyChoice() {
     const suit = { scout: 'diamonds', siege: 'clubs', supply: 'hearts' }[window.gameState.turnPhase];
     choices = choices.filter(choice => choice.value === suit);
   }
-  window.showChoiceModal('🔄 协同成功', '请选择要发动的技能：', choices, (suit) => {
+  window.showChoiceModal('🔄 协同成功', '请选择要发动的技能：', choices, async (suit) => {
     const idxs = window.gameState.synergyCards.map(c => c.idx).sort((a, b) => b - a);
-    for (const i of idxs) window.gameState.discard.push(window.gameState.hand.splice(i, 1)[0]);
+    const g = window.gameState;
+    if (g.rogue) {
+      g.phase = 'rogue-action';
+      const costs = idxs.map(i => g.hand[i]);
+      await discardHand(g,costs[0],costs[1]);
+      await discardHand(g,costs[1]);
+      g.phase = 'synergy';
+    } else for (const i of idxs) g.discard.push(g.hand.splice(i, 1)[0]);
     window.gameState.synergyCards = [];
     window.gameState.selectedHand = null;
     document.getElementById('skill-section').style.display = 'none';

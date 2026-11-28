@@ -1,3 +1,5 @@
+import { createRun, canSalvage } from './rogue.js';
+import { createDeck, hasAction } from './constructed.js';
 import { createCard, shuffle, LAYER_CONFIG } from './config.js';
 import { getCommander } from './commanders.js';
 
@@ -8,10 +10,11 @@ export function isDefenseExpansion() {
 }
 
 // ==================== 初始化 ====================
-export function initGame() {
-  const cmd = getCommander();
+export function initGame(preset) {
+  const rogueMode = window.gameState.selectedMode === 'rogue';
+  const cmd = rogueMode ? null : getCommander();
   const handSize = cmd ? cmd.hand : 5;
-  const supplySize = cmd ? cmd.supply : 2;
+  const supplySize = cmd?.supply ?? (rogueMode ? 3 : 2);
   const mulliganLimit = cmd ? cmd.mulligan : 2;
 
   const fullDeck = [];
@@ -52,6 +55,8 @@ export function initGame() {
   const selectedCommander = window.gameState.selectedCommander;
   const defenseMode = selectedMode === 'defense' || selectedMode === 'commander+defense';
   window.gameState = {
+    rogue: selectedMode === 'rogue' ? createRun() : null,
+    constructed: selectedMode === 'constructed' ? createDeck(preset) : null,
     selectedMode,
     selectedCommander,
     deck: playerDeck,
@@ -176,7 +181,14 @@ export function checkGameOver() {
     window.showModal('🏆 胜利！', `你成功攻破了城堡！\n剩余手牌: ${window.gameState.hand.length} 张\n剩余物资: ${window.gameState.supply.length} 张\n总分参考: ${score}`);
     return;
   }
-  if (window.gameState.hand.length === 0 && window.gameState.supply.length === 0) {
+  if (window.gameState.constructed) {
+    if (!hasAction(window.gameState)) {
+      window.gameState.phase = 'gameover';
+      window.showModal('💀 失败', '普通手牌耗尽，当前无法学习或发动技能。');
+    }
+    return;
+  }
+  if (window.gameState.hand.length === 0 && window.gameState.supply.length === 0 && !canSalvage(window.gameState)) {
     window.gameState.phase = 'gameover';
     window.showModal('💀 失败', '手牌和物资均已耗尽，无法继续攻城。再试一次吧！');
     return;

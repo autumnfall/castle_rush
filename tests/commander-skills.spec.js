@@ -535,10 +535,7 @@ test.describe('推进之王', () => {
   });
 
   test('♠️ 突破战术：击败覆盖暗置敌人的明置敌人后可翻一张新暗置敌人', async ({ page }) => {
-    page.on('dialog', async dialog => {
-      if (dialog.message().includes('突破战术')) await dialog.accept();
-      else await dialog.accept();
-    });
+    acceptDialogs(page);
     await patchGameState(page, {
       hand: [makeCard('hearts', 5)],
       supply: [makeCard('spades', 8)],
@@ -554,7 +551,33 @@ test.describe('推进之王', () => {
     const state = await getGameState(page);
     expect(state.enemies[0].defeated).toBe(true);
     expect(state.enemies[1].revealed).toBe(true);
+    expect(state.hand).toEqual([{ suit: 'hearts', rank: 5 }]);
+    expect(state.supply).toEqual([{ suit: 'hearts', rank: 5 }]);
+    expect(await page.evaluate(() => window.gameState.discard.map(c => [c.suit,c.rank]))).toEqual([['spades',8]]);
+    expect(state.turn).toBe(2);
   });
+
+  for (const hasSpade of [true, false]) {
+    test('突破战术：' + (hasSpade ? '拒绝代弃' : '没有黑桃') + '时正常弃手牌，新目标保持暗置', async ({page}) => {
+      let prompts = 0;
+      page.on('dialog', async dialog => { prompts++; await dialog.dismiss(); });
+      const h = makeCard('diamonds', 4);
+      await patchGameState(page, {
+        hand: [h], discard: [], supply: hasSpade ? [makeCard('spades',8)] : [],
+        enemies: [makeEnemy('diamonds',7,4,0,1,true), makeEnemy('clubs',5,3,0,1)]
+      });
+      await page.locator('.hand-card').click();
+      await clickSelectableEnemy(page);
+      const state = await getGameState(page);
+      expect(prompts).toBe(Number(hasSpade));
+      expect(state.handCount).toBe(0);
+      expect(state.discardCount).toBe(1);
+      expect(state.supplyCount).toBe(1 + Number(hasSpade));
+      expect(state.enemies[1].revealed).toBe(false);
+      expect(state.turn).toBe(2);
+      expect(await page.evaluate(() => window.gameState.discard[0].id)).toBe(h.id);
+    });
+  }
 });
 
 // ==================== 取消与边界场景 ====================

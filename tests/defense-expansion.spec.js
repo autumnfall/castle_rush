@@ -11,7 +11,7 @@ import {
  */
 async function setupDefenseGame(page) {
   await page.goto('/');
-  await page.click('[data-mode="defense"]');
+  await page.evaluate(() => window.selectMode('defense'));
   await page.click('#btn-mode-confirm');
   await page.waitForSelector('#mulligan-bar', { state: 'visible' });
   await page.click('button:has-text("确认手牌")');
@@ -23,7 +23,7 @@ async function setupDefenseGame(page) {
  */
 async function setupDefenseCommanderGame(page, commanderKey) {
   await page.goto('/');
-  await page.click('[data-mode="commander+defense"]');
+  await page.evaluate(() => window.selectMode('commander+defense'));
   await page.click('#btn-mode-confirm');
   await page.locator(`.commander-card[data-key="${commanderKey}"]`).click();
   await page.click('#btn-cmd-confirm');

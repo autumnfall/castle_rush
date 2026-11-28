@@ -6,7 +6,7 @@
   <title>城堡突袭</title>
   <meta name="theme-color" content="#11171f">
   <link rel="icon" href="data:,">
-  <meta name="description" content="城堡突袭：单人策略卡牌游戏，包含基础规则、指挥官和城防扩展。">
+  <meta name="description" content="城堡突袭：单人策略卡牌游戏，包含基础游戏、指挥官扩展和创造模式。">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -47,20 +47,29 @@
           <span class="mode-name">指挥官扩展</span>
           <span class="mode-desc">从五位指挥官中挑选一位，运用专属战术。</span>
         </button>
-        <button type="button" class="mode-card" data-mode="defense" onclick="selectMode('defense')" aria-pressed="false">
-          <span class="mode-emblem" aria-hidden="true">♜</span>
-          <span class="mode-name">城防扩展</span>
-          <span class="mode-desc">规划侦查、攻城和补给，留意昼夜与疲劳。</span>
-        </button>
-        <button type="button" class="mode-card" data-mode="commander+defense" onclick="selectMode('commander+defense')" aria-pressed="false">
-          <span class="mode-emblem" aria-hidden="true">♛</span>
-          <span class="mode-name">指挥官 + 城防</span>
-          <span class="mode-desc">结合两种扩展，解锁全部七位指挥官。</span>
+        <button type="button" class="mode-card" data-mode="rogue" onclick="selectMode('rogue')" aria-pressed="false">
+          <span class="mode-emblem" aria-hidden="true">♧</span>
+          <span class="mode-name">创造模式</span>
+          <span class="mode-desc">击败敌人，用物资升级，随机收集并装备战术。</span>
         </button>
       </div>
       <div class="setup-actions">
         <button class="primary" id="btn-mode-confirm" onclick="confirmMode()" disabled>请选择游戏模式</button>
       </div>
+    </section>
+
+    <section id="deck-builder" class="hidden" aria-labelledby="builder-title">
+      <div class="screen-heading"><h2 id="builder-title" tabindex="-1">手动构筑</h2></div>
+      <p>选择 1 张天赋和 5 张不同的普通技能，合计恰好 10 费。四种花色可以混搭；天赋开局入手并持续生效。</p>
+      <form id="builder-form">
+        <fieldset><legend>天赋</legend><div id="builder-talents" class="builder-grid"></div></fieldset>
+        <fieldset><legend>普通技能</legend><div id="builder-cards"></div></fieldset>
+        <div class="builder-actions panel">
+          <strong id="builder-count" aria-live="polite"></strong>
+          <div><button class="primary" id="builder-start" type="submit" disabled>使用此卡组开局</button>
+          <button id="builder-back" type="button">返回模式选择</button></div>
+        </div>
+      </form>
     </section>
 
     <!-- 指挥官选择 -->
@@ -113,10 +122,12 @@
         <section id="player-area" class="panel" aria-label="作战指令">
           <div id="message" role="status" aria-live="polite"></div>
           <div class="action-bar game-actions">
-            <button class="primary" onclick="showSkillPanel()">发动战术</button>
+            <button id="basic-tactics" class="primary" onclick="showSkillPanel()">发动战术</button>
             <button onclick="showRules()">规则说明</button>
             <button class="danger" onclick="resetGame()">重新开始</button>
           </div>
+          <section id="rogue-panel" class="section hidden" aria-label="创造模式战术"></section>
+          <section id="constructed-panel" class="section hidden" aria-label="技能卡组"></section>
           <div class="section resource-panel">
             <h2 class="section-title">物资与牌堆</h2>
             <div id="piles-area">
@@ -131,7 +142,7 @@
                 </div>
               </div>
               <div class="pile-box">
-                <div class="pile-label">弃牌堆</div>
+                <button type="button" id="view-discard" class="pile-label" onclick="showDiscardModal()">查看普通弃牌顺序</button>
                 <div class="pile-cards" id="discard-pile"></div>
               </div>
               <div class="pile-box" id="time-pile-box" style="display:none;">

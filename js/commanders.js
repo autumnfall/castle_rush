@@ -61,9 +61,14 @@ export const COMMANDERS = {
       return true;
     },
     onAttackSuccess: (handCard, enemy) => {
-      window.gameState.discard.push(handCard);
       window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       enemy.defeated = true;
+      const defense = window.gameState.supply.find(c => c.suit === 'spades');
+      if (defense) {
+        window.askDefense(handCard, enemy, defense, true);
+        return false;
+      }
+      window.gameState.discard.push(handCard);
       window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
       return true; // 已完成
     },
@@ -72,8 +77,8 @@ export const COMMANDERS = {
       window.renderAll();
       const defense = window.gameState.supply.find(c => c.suit === 'spades');
       if (defense) {
-        setTimeout(() => window.askDefense(handCard, enemy, defense), 150);
-        return false; // 异步处理
+        window.askDefense(handCard, enemy, defense);
+        return false;
       } else {
         window.gameState.discard.push(handCard);
         return true;
@@ -90,7 +95,7 @@ export const COMMANDERS = {
       hearts: '♥️ 临时补给：物资不小于3时抽3张，否则抽2张',
       diamonds: '♦️ 优势侦查：手牌不小于5时翻至多2张暗置敌人，否则翻1张',
       clubs: '♣️ 火力压制：直接击败1张明置敌人；或弃1张手牌击败1张暗置敌人',
-      spades: '♠️ 攻城增援：攻城成功时，抽2张手牌'
+      spades: '♠️ 攻城增援：攻城成功时，可弃1张黑桃物资，抽2张手牌'
     },
     onSkillHearts: (card) => {
       const amount = window.gameState.supply.length >= 3 ? 3 : 2;
@@ -155,20 +160,17 @@ export const COMMANDERS = {
       const reinforce = window.gameState.supply.find(c => c.suit === 'spades');
       if (reinforce) {
         window.renderAll();
-        setTimeout(() => {
-          const useReinforce = confirm(`♠️ 攻城增援：是否消耗♠️${rankName(reinforce.rank)}发动攻城增援，抽2张牌？`);
-          if (useReinforce) {
-            const idx = window.gameState.supply.findIndex(c => c.id === reinforce.id);
-            window.gameState.discard.push(window.gameState.supply.splice(idx, 1)[0]);
-            const drawn = window.draw(2);
-            window.gameState.hand.push(...drawn);
-            window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！♠️攻城增援发动，消耗♠️物资，抽了${drawn.length}张牌。`);
-          } else {
-            window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
-          }
-          window.finishAttack();
-        }, 150);
-        return false;
+        const useReinforce = confirm(`♠️ 攻城增援：是否消耗♠️${rankName(reinforce.rank)}发动攻城增援，抽2张牌？`);
+        if (useReinforce) {
+          const idx = window.gameState.supply.findIndex(c => c.id === reinforce.id);
+          window.gameState.discard.push(window.gameState.supply.splice(idx, 1)[0]);
+          const drawn = window.draw(2);
+          window.gameState.hand.push(...drawn);
+          window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！♠️攻城增援发动，消耗♠️物资，抽了${drawn.length}张牌。`);
+        } else {
+          window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
+        }
+        return true;
       }
 
       window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
@@ -251,7 +253,7 @@ export const COMMANDERS = {
       window.renderAll();
       const defense = window.gameState.supply.find(c => c.suit === 'spades');
       if (defense) {
-        setTimeout(() => window.askDefenseIntel(handCard, enemy, defense), 150);
+        window.askDefenseIntel(handCard, enemy, defense);
         return false;
       } else {
         window.gameState.discard.push(handCard);
@@ -321,14 +323,15 @@ export const COMMANDERS = {
     },
     onSkillSpades: () => { alert('♠️ 战争艺术是被动技能：攻城成功或失败时，可代替手牌进入弃牌堆，根据物资花色数选择额外效果。'); return true; },
     onAttackSuccess: (handCard, enemy) => {
+      window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
+      enemy.defeated = true;
+      window.computeCoverage();
       const defense = window.gameState.supply.find(c => c.suit === 'spades');
       if (defense) {
-        setTimeout(() => window.askDefenseTactician(handCard, enemy, defense, true), 150);
+        window.askDefenseTactician(handCard, enemy, defense, true);
         return false;
       }
       window.gameState.discard.push(handCard);
-      window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
-      enemy.defeated = true;
       window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
       return true;
     },
@@ -337,7 +340,7 @@ export const COMMANDERS = {
       window.renderAll();
       const defense = window.gameState.supply.find(c => c.suit === 'spades');
       if (defense) {
-        setTimeout(() => window.askDefenseTactician(handCard, enemy, defense), 150);
+        window.askDefenseTactician(handCard, enemy, defense);
         return false;
       } else {
         window.gameState.discard.push(handCard);
@@ -404,32 +407,31 @@ export const COMMANDERS = {
     },
     onSkillSpades: () => { alert('♠️ 突破战术是被动技能：攻城成功时代替手牌进入弃牌堆，若产生新可选中敌人可翻一张为明置。'); return true; },
     onAttackSuccess: (handCard, enemy) => {
-      const beforeSelectableIds = new Set(window.gameState.enemies.filter(e => !e.defeated && window.isSelectable(e)).map(e => e.id));
-      window.gameState.discard.push(handCard);
-      window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
+      const g = window.gameState;
+      const covered = g.enemies.filter(e => !e.defeated && !e.revealed && e.coveredBy.includes(enemy.id));
+      g.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       enemy.defeated = true;
       window.computeCoverage();
-      const newSelectable = window.gameState.enemies.filter(e => !e.defeated && !e.revealed && window.isSelectable(e) && !beforeSelectableIds.has(e.id));
-      if (newSelectable.length > 0) {
-        window.gameState._breakthroughNewIds = newSelectable.map(e => e.id);
-        setTimeout(() => {
-          const flip = confirm('♠️ 突破战术：击败后产生了新的可选中敌人，是否将其中一张翻为明置？');
-          if (flip) {
-            window.gameState.phase = 'skill'; window.gameState.skillMode = 'breakthrough_reveal';
-            window.gameState._breakthroughCount = 1;
-            window.setMessage('♠️ 突破战术：点击一张新产生的可选中暗置敌人将其翻为明置。');
-            document.getElementById('skill-section').style.display = 'block';
-            window.renderAll();
-          } else {
-            window.gameState._breakthroughNewIds = undefined;
-            window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
-            window.finishAttack();
-          }
-        }, 150);
-        return false; // 异步
+      const defense = g.supply.find(card => card.suit === 'spades');
+      if (!defense || !confirm(`♠️ 突破战术：用物资♠${rankName(defense.rank)}代替攻城手牌${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)}进入弃牌堆？`)) {
+        g.discard.push(handCard);
+        window.setMessage(`攻城成功，已缴获${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。`);
+        return true;
       }
-      window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
-      return true;
+      g.discard.push(g.supply.splice(g.supply.indexOf(defense), 1)[0]);
+      g._skipHandRemove = true;
+      const opened = covered.filter(window.isSelectable);
+      if (!opened.length) {
+        window.setMessage('♠️ 突破战术：已弃黑桃物资，保留攻城手牌。');
+        return true;
+      }
+      g._breakthroughNewIds = opened.map(e => e.id);
+      g.phase = 'skill';
+      g.skillMode = 'breakthrough_reveal';
+      window.setMessage('♠️ 突破战术：已保留攻城手牌。可翻明一张新露出的暗敌，或点击取消。');
+      document.getElementById('skill-section').style.display = 'block';
+      window.renderAll();
+      return false;
     },
     onAttackFail: (handCard, enemy) => {
       window.setMessage(`💥 攻城失败！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 无法攻克 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。敌人已明置。`);
@@ -498,14 +500,14 @@ export const DEFENSE_COMMANDERS = {
     },
     onSkillSpades: () => { alert('♠️ 缓兵之计是被动技能：攻城成功时，可代替原手牌进入弃牌堆，然后弃置暗置时间牌或抽1张牌。'); return true; },
     onAttackSuccess: (handCard, enemy) => {
+      window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
+      enemy.defeated = true;
       const defense = window.gameState.supply.find(c => c.suit === 'spades');
       if (defense) {
-        setTimeout(() => window.askBlitzkriegDefense(handCard, enemy, defense), 150);
+        window.askBlitzkriegDefense(handCard, enemy, defense);
         return false;
       }
       window.gameState.discard.push(handCard);
-      window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
-      enemy.defeated = true;
       window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
       return true;
     },
@@ -629,7 +631,7 @@ export const DEFENSE_COMMANDERS = {
       window.renderAll();
       const defense = window.gameState.supply.find(c => c.suit === 'spades');
       if (defense) {
-        setTimeout(() => window.askAttritionDefense(handCard, enemy, defense), 150);
+        window.askAttritionDefense(handCard, enemy, defense);
         return false;
       }
       window.gameState.discard.push(handCard);

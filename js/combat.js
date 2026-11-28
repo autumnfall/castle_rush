@@ -1,12 +1,18 @@
+import { attackCommander, baseDefense } from './rogue.js';
 import { SUIT_NAMES, rankName } from './config.js';
 import { computeCoverage, checkGameOver, draw, advanceTurnPhase } from './core.js';
 import { getCommander, COMMANDERS } from './commanders.js';
 
 // ==================== 核心攻城 ====================
 export function performAttack(handCard, enemy) {
-  const cmd = getCommander();
+  const g = window.gameState;
+  const cmd = g.rogue ? attackCommander(g) : getCommander();
   const success = (handCard.suit === enemy.suit) || (handCard.rank === enemy.rank);
   enemy.revealed = true;
+  if (g.rogue) {
+    g.phase = 'rogue-action';
+    if (baseDefense(g,handCard,enemy,success)) return;
+  }
 
   if (success) {
     const done = cmd ? cmd.onAttackSuccess(handCard, enemy) : COMMANDERS.novice.onAttackSuccess(handCard, enemy);
@@ -18,6 +24,7 @@ export function performAttack(handCard, enemy) {
 }
 
 export function finishAttack() {
+  if (window.gameState.rogue) window.gameState.phase = 'playing';
   if (window.gameState.selectedHand !== null && !window.gameState._skipHandRemove) {
     window.gameState.hand.splice(window.gameState.selectedHand, 1);
   }
@@ -45,16 +52,16 @@ export function finishAttack() {
   window.renderAll();
 }
 
-export function askDefense(handCard, enemy, defense) {
+export function askDefense(handCard, enemy, defense, isSuccess = false) {
   const useDef = confirm(`你有♠️${rankName(defense.rank)}防御物资，是否使用它代替 ${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 进入弃牌堆？`);
   if (useDef) {
     const idx = window.gameState.supply.findIndex(c => c.id === defense.id);
     window.gameState.discard.push(window.gameState.supply.splice(idx, 1)[0]);
     window.gameState._skipHandRemove = true;
-    window.setMessage(`♠️ 防御发动！用♠️${rankName(defense.rank)}代替手牌进入弃牌堆。敌人已明置。`);
+    window.setMessage(`♠️ 防御发动！用♠️${rankName(defense.rank)}代替手牌进入弃牌堆。${isSuccess ? '攻城成功，已缴获敌人。' : '攻城失败，敌人已明置。'}`);
   } else {
     window.gameState.discard.push(handCard);
-    window.setMessage(`💥 攻城失败！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 无法攻克 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。敌人已明置。`);
+    window.setMessage(isSuccess ? `攻城成功，已缴获${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。` : `💥 攻城失败！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 无法攻克 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。敌人已明置。`);
   }
   finishAttack();
 }
@@ -91,10 +98,6 @@ export function askDefenseTactician(handCard, enemy, defense, isSuccess = false)
     const idx = window.gameState.supply.findIndex(c => c.id === defense.id);
     window.gameState.discard.push(window.gameState.supply.splice(idx, 1)[0]);
     window.gameState._skipHandRemove = true;
-    if (isSuccess) {
-      window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
-      enemy.defeated = true;
-    }
     if (uniqueSuits <= 1) {
       window.setMessage(`♠️ 战争艺术发动！用♠️${rankName(defense.rank)}代替手牌。物资花色仅1种，无额外效果。`);
       finishAttack();
@@ -143,8 +146,6 @@ export function askDefenseTactician(handCard, enemy, defense, isSuccess = false)
   } else {
     window.gameState.discard.push(handCard);
     if (isSuccess) {
-      window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
-      enemy.defeated = true;
       window.setMessage(`🎉 攻城成功！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 击败了 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}！`);
     } else {
       window.setMessage(`💥 攻城失败！${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 无法攻克 ${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。敌人已明置。`);
