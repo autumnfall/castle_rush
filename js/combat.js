@@ -8,14 +8,15 @@ export function performAttack(handCard, enemy) {
   const g = window.gameState;
   const cmd = g.rogue ? attackCommander(g) : getCommander();
   const success = (handCard.suit === enemy.suit) || (handCard.rank === enemy.rank);
+  const supplyAtStart = [...g.supply];
   enemy.revealed = true;
   if (g.rogue) {
     g.phase = 'rogue-action';
-    if (baseDefense(g,handCard,enemy,success)) return;
+    if (baseDefense(g,handCard,enemy,success,supplyAtStart)) return;
   }
 
   if (success) {
-    const done = cmd ? cmd.onAttackSuccess(handCard, enemy) : COMMANDERS.novice.onAttackSuccess(handCard, enemy);
+    const done = (cmd || COMMANDERS.novice).onAttackSuccess(handCard, enemy, supplyAtStart);
     if (done) finishAttack();
   } else {
     const done = cmd ? cmd.onAttackFail(handCard, enemy) : COMMANDERS.novice.onAttackFail(handCard, enemy);
@@ -91,10 +92,10 @@ export function askDefenseIntel(handCard, enemy, defense) {
 }
 
 // 战术大师战争艺术
-export function askDefenseTactician(handCard, enemy, defense, isSuccess = false) {
+export function askDefenseTactician(handCard, enemy, defense, isSuccess = false, supplyAtStart = window.gameState.supply) {
   const useDef = confirm(`你有♠️${rankName(defense.rank)}防御物资，是否使用它代替 ${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)} 进入弃牌堆？\n（战争艺术：根据物资花色数获得额外效果）`);
   if (useDef) {
-    const uniqueSuits = new Set(window.gameState.supply.map(c => c.suit)).size;
+    const uniqueSuits = new Set(supplyAtStart.map(c => c.suit)).size;
     const idx = window.gameState.supply.findIndex(c => c.id === defense.id);
     window.gameState.discard.push(window.gameState.supply.splice(idx, 1)[0]);
     window.gameState._skipHandRemove = true;

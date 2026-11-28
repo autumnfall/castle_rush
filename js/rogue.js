@@ -166,8 +166,8 @@ function defeat(g,e) {
   g.supply.push({id:e.id,suit:e.suit,rank:e.rank});
   computeCoverage();
 }
-async function defend(g,h,reserved) {
-  const card = await pick('黑桃防御 · 是否代弃 '+label(h),g.supply.filter(c=>c.suit==='spades'),label,true);
+async function defend(g,h,supply,reserved) {
+  const card = await pick('黑桃防御 · 是否代弃 '+label(h),supply.filter(c=>c.suit==='spades'),label,true);
   if (!card) return false;
   g.discard.push(remove(g.supply,card));
   if (g.rogue.ranks.spades === 2) await swap(g,g.discard,'防御后交换',reserved);
@@ -175,7 +175,7 @@ async function defend(g,h,reserved) {
 }
 export async function discardHand(g,h,reserved) {
   if (g.rogue.equipped.spades === base('spades') && g.rogue.ranks.spades === 2 &&
-      g.supply.some(c=>c.suit==='spades') && await defend(g,h,reserved)) return;
+      g.supply.some(c=>c.suit==='spades') && await defend(g,h,g.supply,reserved)) return;
   g.discard.push(remove(g.hand,h));
 }
 async function initialAction(g,card) {
@@ -247,13 +247,13 @@ export function attackCommander(g) {
   const key = g.rogue.equipped.spades;
   return key && ownerOf(key)!=='base' ? COMMANDERS[ownerOf(key)] : null;
 }
-export function baseDefense(g,h,e,hit) {
+export function baseDefense(g,h,e,hit,supplyAtStart) {
   const r = g.rogue, key = r.equipped.spades;
   if (key && ownerOf(key)!=='base') return false;
   async function resolveAttack() {
     if (hit) defeat(g,e);
-    const can = key && (!hit || r.ranks.spades >= 1) && g.supply.some(c=>c.suit==='spades');
-    if (can && await defend(g,h)) g._skipHandRemove = true;
+    const can = key && (!hit || r.ranks.spades >= 1) && supplyAtStart.some(c=>c.suit==='spades');
+    if (can && await defend(g,h,supplyAtStart)) g._skipHandRemove = true;
     else g.discard.push(h);
     setMessage(hit?'攻城成功，已缴获敌人。':'攻城失败，敌人已明置。');
     window.finishAttack();

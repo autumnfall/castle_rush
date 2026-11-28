@@ -167,9 +167,9 @@ test('四个装备槽始终有战术，开局不能弃装备领奖', async ({pag
   expect(gear).toEqual(['base/hearts','base/diamonds','base/clubs','base/spades']);
 });
 
-test('创造模式突破战术可用刚缴获的黑桃代弃，即使没有新目标', async ({page}) => {
+test('创造模式突破战术不能用本次缴获的黑桃代弃', async ({page}) => {
   await start(page);
-  await page.evaluate(() => { window.gameState.rogue.equipped.spades = 'assault/spades'; });
+  await page.evaluate(() => { window.gameState.rogue.equipped.spades = 'assault/spades'; window.gameState.rogue.level = 20; });
   const hand = makeCard('hearts',6);
   const target = makeEnemy('spades',6,4,0,1,true);
   await patchGameState(page,{ hand:[hand], supply:[], discard:[], enemies:[target,makeEnemy('clubs',8,4,1,3)] });
@@ -178,8 +178,8 @@ test('创造模式突破战术可用刚缴获的黑桃代弃，即使没有新�
   await page.locator('.enemy-card.selectable.front').click();
   expect(await page.evaluate(() => {
     const g = window.gameState;
-    return [g.hand.map(c=>c.id),g.supply.length,g.discard.map(c=>c.id),g.turn,g.phase];
-  })).toEqual([[hand.id],0,[target.id],2,'playing']);
+    return [g.hand.map(c=>c.id),g.supply.map(c=>c.id),g.discard.map(c=>c.id),g.turn,g.phase];
+  })).toEqual([[],[target.id],[hand.id],2,'playing']);
 });
 
 test('首页和创造模式对局内均可查阅四花色的三档初始战术', async ({page}) => {
@@ -198,29 +198,34 @@ test('首页和创造模式对局内均可查阅四花色的三档初始战术',
   }
 });
 
-test('创造模式黑桃初始仅失败可代弃，升级后也能使用刚缴获的黑桃', async ({page}) => {
+test('创造模式各级防御仅可选择攻城前持有的黑桃', async ({page}) => {
   await start(page);
   for (const rank of [0,1,2]) {
     await page.evaluate(rank => {
       window.gameState.rogue.level = 20;
       window.gameState.rogue.ranks.spades = rank;
     },rank);
-    for (const hit of [true,false]) {
+    for (const [hit, stocked] of [[true,false],[true,true],[false,true]]) {
       const h = makeCard('hearts',5), spare = makeCard('clubs',2);
       const target = makeEnemy(hit ? 'spades':'clubs',hit ? 5:7,4,0,1);
-      const payment = hit ? target : makeCard('spades',8);
-      await patchGameState(page,{hand:[h,spare],supply:hit ? []:[payment],discard:[],
+      const payment = makeCard('spades',8);
+      await patchGameState(page,{hand:[h,spare],supply:stocked ? [payment]:[],discard:[],
         enemies:[target,makeEnemy('diamonds',9,4,1,3)]});
       await page.locator('.hand-card').first().click();
       await page.locator('.enemy-card.selectable').first().click();
-      const replaces = rank > 0 || !hit;
+      const replaces = stocked && (rank > 0 || !hit);
       if (replaces) {
-        await choices(page).first().click();
+        await expect(choices(page)).toHaveCount(2);
+        await choices(page).filter({hasText:'♠8'}).click();
         if (rank === 2) await choices(page).filter({hasText:'跳过'}).click();
       }
       await expect(page.locator('#modal-overlay')).not.toHaveClass(/show/);
       const piles = await page.evaluate(() => ['hand','supply','discard'].map(zone=>window.gameState[zone].map(c=>c.id)));
-      expect(piles).toEqual(replaces ? [[h.id,spare.id],[],[payment.id]] : [[spare.id],[payment.id],[h.id]]);
+      expect(piles).toEqual([
+        replaces ? [h.id,spare.id] : [spare.id],
+        [...(stocked && !replaces ? [payment.id] : []), ...(hit ? [target.id] : [])],
+        [replaces ? payment.id : h.id],
+      ]);
     }
   }
 });

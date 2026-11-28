@@ -60,10 +60,10 @@ export const COMMANDERS = {
       alert('♠️ 防御是被动技能：当你有手牌需要进入弃牌堆时，会自动提示是否用♠️物资代替。');
       return true;
     },
-    onAttackSuccess: (handCard, enemy) => {
+    onAttackSuccess: (handCard, enemy, supplyAtStart) => {
       window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       enemy.defeated = true;
-      const defense = window.gameState.supply.find(c => c.suit === 'spades');
+      const defense = supplyAtStart.find(c => c.suit === 'spades');
       if (defense) {
         window.askDefense(handCard, enemy, defense, true);
         return false;
@@ -152,12 +152,12 @@ export const COMMANDERS = {
       return false;
     },
     onSkillSpades: () => { alert('♠️ 攻城增援是被动技能：攻城成功时，若有♠️物资可消耗1张抽2张手牌。'); return true; },
-    onAttackSuccess: (handCard, enemy) => {
+    onAttackSuccess: (handCard, enemy, supplyAtStart) => {
       window.gameState.discard.push(handCard);
       window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       enemy.defeated = true;
 
-      const reinforce = window.gameState.supply.find(c => c.suit === 'spades');
+      const reinforce = supplyAtStart.find(c => c.suit === 'spades');
       if (reinforce) {
         window.renderAll();
         const useReinforce = confirm(`♠️ 攻城增援：是否消耗♠️${rankName(reinforce.rank)}发动攻城增援，抽2张牌？`);
@@ -322,13 +322,13 @@ export const COMMANDERS = {
       return false;
     },
     onSkillSpades: () => { alert('♠️ 战争艺术是被动技能：攻城成功或失败时，可代替手牌进入弃牌堆，根据物资花色数选择额外效果。'); return true; },
-    onAttackSuccess: (handCard, enemy) => {
+    onAttackSuccess: (handCard, enemy, supplyAtStart) => {
       window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       enemy.defeated = true;
       window.computeCoverage();
-      const defense = window.gameState.supply.find(c => c.suit === 'spades');
+      const defense = supplyAtStart.find(c => c.suit === 'spades');
       if (defense) {
-        window.askDefenseTactician(handCard, enemy, defense, true);
+        window.askDefenseTactician(handCard, enemy, defense, true, supplyAtStart);
         return false;
       }
       window.gameState.discard.push(handCard);
@@ -406,13 +406,13 @@ export const COMMANDERS = {
       return false;
     },
     onSkillSpades: () => { alert('♠️ 突破战术是被动技能：攻城成功时代替手牌进入弃牌堆，若产生新可选中敌人可翻一张为明置。'); return true; },
-    onAttackSuccess: (handCard, enemy) => {
+    onAttackSuccess: (handCard, enemy, supplyAtStart) => {
       const g = window.gameState;
       const covered = g.enemies.filter(e => !e.defeated && !e.revealed && e.coveredBy.includes(enemy.id));
       g.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       enemy.defeated = true;
       window.computeCoverage();
-      const defense = g.supply.find(card => card.suit === 'spades');
+      const defense = supplyAtStart.find(card => card.suit === 'spades');
       if (!defense || !confirm(`♠️ 突破战术：用物资♠${rankName(defense.rank)}代替攻城手牌${SUIT_NAMES[handCard.suit]}${rankName(handCard.rank)}进入弃牌堆？`)) {
         g.discard.push(handCard);
         window.setMessage(`攻城成功，已缴获${SUIT_NAMES[enemy.suit]}${rankName(enemy.rank)}。`);
@@ -499,10 +499,10 @@ export const DEFENSE_COMMANDERS = {
       return false;
     },
     onSkillSpades: () => { alert('♠️ 缓兵之计是被动技能：攻城成功时，可代替原手牌进入弃牌堆，然后弃置暗置时间牌或抽1张牌。'); return true; },
-    onAttackSuccess: (handCard, enemy) => {
+    onAttackSuccess: (handCard, enemy, supplyAtStart) => {
       window.gameState.supply.push({ ...enemy, coveredBy: undefined, pos: undefined, layer: undefined, index: undefined });
       enemy.defeated = true;
-      const defense = window.gameState.supply.find(c => c.suit === 'spades');
+      const defense = supplyAtStart.find(c => c.suit === 'spades');
       if (defense) {
         window.askBlitzkriegDefense(handCard, enemy, defense);
         return false;
