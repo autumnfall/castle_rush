@@ -58,7 +58,7 @@ window.performAttack = Combat.performAttack;
 // ==================== 模式与指挥官选择 ====================
 export function selectMode(mode) {
   window.gameState.selectedMode = mode;
-  document.getElementById('basic-tutorial-start').classList.toggle('hidden', mode !== 'basic');
+  Tutorial.hideInvite();
   document.querySelectorAll('.mode-card').forEach(el => {
     const selected = el.dataset.mode === mode;
     el.classList.toggle('selected', selected);
@@ -320,7 +320,6 @@ export function onEnemyClick(enemyId) {
 // ==================== 重置 ====================
 export function resetGame() {
   UI.closeModal();
-  document.getElementById('basic-tutorial-start').classList.add('hidden');
   document.getElementById('tutorial-panel').classList.add('hidden');
   document.getElementById('skill-section').style.display = 'none';
   document.getElementById('btn-cmd-confirm').disabled = true;
@@ -373,4 +372,4 @@ document.addEventListener('DOMContentLoaded', () => {
   // 默认显示模式选择界面
 });
 
-Tutorial.bind(startGame, resetGame);
+Tutorial.bind(startGame, resetGame, selectMode);

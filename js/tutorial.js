@@ -74,8 +74,34 @@ export function render() {
   next.textContent = g.tutorial === lessons.length - 1 ? '开始基础游戏' : '下一步';
 }
 
-export function bind(startGame, resetGame) {
-  document.getElementById('basic-tutorial-start').onclick = () => openLesson(0, startGame);
+function displayInvite(visible) {
+  document.getElementById('intro-description').hidden = visible;
+  document.getElementById('tutorial-invite').hidden = !visible;
+  document.getElementById('tutorial-dismiss').hidden = !visible;
+}
+
+export function hideInvite() {
+  displayInvite(false);
+}
+
+export function bind(startGame, resetGame, selectMode) {
+  const visitKey = 'castle-rush:seen-tutorial-invite';
+  let firstVisit = true;
+  try {
+    firstVisit = localStorage.getItem(visitKey) === null;
+    if (firstVisit) localStorage.setItem(visitKey, '1');
+  } catch {
+    // The invitation and both choices also work when storage is unavailable.
+  }
+  displayInvite(firstVisit);
+  document.getElementById('tutorial-dismiss').onclick = () => {
+    hideInvite();
+    document.querySelector('.mode-card').focus();
+  };
+  document.getElementById('basic-tutorial-start').onclick = () => {
+    selectMode('basic');
+    openLesson(0, startGame);
+  };
   document.getElementById('tutorial-retry').onclick = () => openLesson(window.gameState.tutorial, startGame);
   document.getElementById('tutorial-exit').onclick = resetGame;
   document.getElementById('tutorial-next').onclick = () => {

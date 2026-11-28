@@ -21,8 +21,13 @@
       <div class="intro">
         <div class="intro-copy">
           <h1>城堡<span>突袭</span></h1>
-          <p>以手牌攻城，把击败的敌人化为物资。冲破层层防线，拿下城堡。</p>
-          <button class="quiet" type="button" onclick="showRules()">阅读规则</button>
+          <p id="intro-description">以手牌攻城，把击败的敌人化为物资。冲破层层防线，拿下城堡。</p>
+          <p id="tutorial-invite" hidden><strong>第一次攻城，要先试试基础教程吗？</strong><br>用五个小练习学会攻城和四种花色战术。</p>
+          <div class="action-bar">
+            <button type="button" id="basic-tutorial-start" class="primary">基础游戏教程</button>
+            <button type="button" id="tutorial-dismiss" hidden>跳过教程</button>
+            <button class="quiet" type="button" onclick="showRules()">阅读规则</button>
+          </div>
         </div>
         <picture class="hero-art" aria-hidden="true">
           <source type="image/avif"
@@ -54,7 +59,6 @@
         </button>
       </div>
       <div class="setup-actions">
-        <button type="button" id="basic-tutorial-start" class="quiet hidden">基础游戏教程</button>
         <button class="primary" id="btn-mode-confirm" onclick="confirmMode()" disabled>请选择游戏模式</button>
       </div>
     </section>

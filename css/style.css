@@ -178,6 +178,7 @@ button:disabled:not(.enemy-card, .hand-card) { opacity: .52; cursor: not-allowed
 .board-legend { color: var(--gold); font-size: .8rem; text-align: right; }
 .board-legend::before { content: ""; display: inline-block; width: .56em; height: .68em; border: 1px solid currentColor; margin-inline-end: 5px; border-radius: 1px; }
 #board-area {
+  isolation: isolate;
   --row-step: clamp(52px, 7.3svh, 68px);
   --card-height: clamp(103px, 13.2svh, 123px);
   position: relative;

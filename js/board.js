@@ -51,6 +51,7 @@ export function renderEnemies() {
 
     // 保持原有牌阵的相对间距，让棋盘可以随屏幕宽度缩放。
     el.style.left = `${enemy.pos * (45 / 342) * 100}%`;
+    el.style.zIndex = String(enemy.layer);
     el.style.top = `calc(${enemy.layer} * var(--row-step))`;
     el.tabIndex = el.classList.contains('selectable') ? 0 : -1;
     el.onclick = () => window.onEnemyClick(enemy.id);
