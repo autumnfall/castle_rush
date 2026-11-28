@@ -364,3 +364,6 @@ button:disabled:not(.enemy-card, .hand-card) { opacity: .52; cursor: not-allowed
 #rogue-panel details, #rogue-panel button { margin-top: .4rem; }
 #rogue-panel summary { cursor: pointer; }
 @media (max-width:720px) { .battlefield:has(#rogue-panel:not(.hidden)) { grid-template-areas: "notice" "board" "hand" "actions" "resources" "skill" "rogue" "commander"; } #rogue-panel { grid-area: rogue; } }
+
+#tutorial-panel { padding: 12px 16px; margin-bottom: 10px; border-color: var(--gold); }
+#tutorial-panel p { margin: 6px 0 10px; }

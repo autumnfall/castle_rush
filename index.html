@@ -54,6 +54,7 @@
         </button>
       </div>
       <div class="setup-actions">
+        <button type="button" id="basic-tutorial-start" class="quiet hidden">基础游戏教程</button>
         <button class="primary" id="btn-mode-confirm" onclick="confirmMode()" disabled>请选择游戏模式</button>
       </div>
     </section>
@@ -85,6 +86,15 @@
 
     <!-- 游戏主界面 -->
     <div id="game-screen" class="hidden">
+      <section id="tutorial-panel" class="panel hidden" aria-labelledby="tutorial-title">
+        <h2 id="tutorial-title" class="section-title" tabindex="-1"></h2>
+        <p id="tutorial-hint" aria-live="polite"></p>
+        <div class="action-bar">
+          <button id="tutorial-next" class="primary" disabled>下一步</button>
+          <button id="tutorial-retry">重试本步</button>
+          <button id="tutorial-exit">退出教程</button>
+        </div>
+      </section>
       <div id="info-bar" aria-label="战况">
         <span>回合 <b id="turn-count">1</b></span>
         <span class="enemy-stat">剩余敌人 <b id="enemy-count">16</b></span>
