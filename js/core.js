@@ -1,3 +1,4 @@
+import { arrangeDeal } from './tutorial.js';
 import { createRun, canSalvage } from './rogue.js';
 import { createDeck, hasAction } from './constructed.js';
 import { createCard, shuffle, LAYER_CONFIG } from './config.js';
@@ -49,12 +50,14 @@ export function initGame(preset) {
     enemies.push({ ...gateCards[2 + i], layer: 4, index: i, pos: LAYER_CONFIG[4].positions[i], revealed: false, defeated: false, coveredBy: [] });
   }
 
-  const playerDeck = shuffle([...normalCards.slice(7), ...queens.slice(3), ...jacks.slice(2)]);
+  const tutorial = preset === 'tutorial' && window.gameState.selectedMode === 'basic';
+  const playerDeck = tutorial ? arrangeDeal(fullDeck, enemies) : shuffle([...normalCards.slice(7), ...queens.slice(3), ...jacks.slice(2)]);
 
   const selectedMode = window.gameState.selectedMode;
   const selectedCommander = window.gameState.selectedCommander;
   const defenseMode = selectedMode === 'defense' || selectedMode === 'commander+defense';
   window.gameState = {
+    tutorial: tutorial ? {index:0, startTurn:1} : null,
     rogue: selectedMode === 'rogue' ? createRun() : null,
     constructed: selectedMode === 'constructed' ? createDeck(preset) : null,
     selectedMode,
@@ -146,9 +149,10 @@ export function showMulligan() {
 export function doMulligan() {
   if (window.gameState.phase !== 'mulligan') return;
   if (window.gameState.mulliganCount >= window.gameState.mulliganLimit) return;
-  window.gameState.deck.push(...window.gameState.hand);
-  window.gameState.hand = [];
-  window.gameState.deck = shuffle(window.gameState.deck);
+  const g = window.gameState;
+  if (g.tutorial) g.deck.unshift(...g.hand);
+  else g.deck = shuffle([...g.deck, ...g.hand]);
+  g.hand = [];
   drawHand(getCommander() ? getCommander().hand : 5);
   window.gameState.mulliganCount++;
   document.getElementById('mulligan-left').textContent = Math.max(0, window.gameState.mulliganLimit - window.gameState.mulliganCount);

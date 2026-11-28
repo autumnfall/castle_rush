@@ -329,6 +329,7 @@ export function resetGame() {
   window.gameState.selectedMode = null;
   window.gameState.constructed = null;
   window.gameState.rogue = null;
+  window.gameState.tutorial = null;
   document.getElementById('game-screen').classList.add('hidden');
   document.getElementById('commander-select').classList.add('hidden');
   document.getElementById('mode-select').classList.remove('hidden');

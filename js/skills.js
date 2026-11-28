@@ -575,6 +575,7 @@ export function showSynergyChoice() {
     const suit = { scout: 'diamonds', siege: 'clubs', supply: 'hearts' }[window.gameState.turnPhase];
     choices = choices.filter(choice => choice.value === suit);
   }
+  if (window.gameState.tutorial) choices = choices.filter(choice => choice.value === 'hearts');
   window.showChoiceModal('🔄 协同成功', '请选择要发动的技能：', choices, async (suit) => {
     const idxs = window.gameState.synergyCards.map(c => c.idx).sort((a, b) => b - a);
     const g = window.gameState;

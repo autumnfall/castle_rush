@@ -5,11 +5,14 @@ export function renderPiles() {
   const supplyEl = document.getElementById('supply-pile');
   supplyEl.innerHTML = '';
   window.gameState.supply.forEach(card => {
-    const el = document.createElement('div');
+    const selectable = window.gameState.phase === 'skill' && window.gameState.skillMode === 'select_supply';
+    const el = document.createElement(selectable ? 'button' : 'div');
     el.className = 'pile-card';
     if (isRed(card.suit)) el.classList.add('red');
     el.innerHTML = `<div style="font-weight:bold">${rankName(card.rank)}</div><div>${SUIT_SYMBOLS[card.suit]}</div>`;
-    if (window.gameState.phase === 'skill' && window.gameState.skillMode === 'select_supply') {
+    if (selectable) {
+      el.type = 'button';
+      el.setAttribute('aria-label', SUIT_NAMES[card.suit] + rankName(card.rank) + '物资');
       el.classList.add('selectable-supply');
       el.onclick = () => window.onSupplyClick(card);
     }
@@ -133,7 +136,7 @@ export function showModal(title, text) {
   document.getElementById('modal-text').innerHTML = text;
   document.getElementById('modal-extra').innerHTML = '';
   document.getElementById('modal-overlay').classList.add('show');
-  if (window.gameState.rogue) document.querySelector('main').inert = true;
+  if (window.gameState.rogue || window.gameState.tutorial) document.querySelector('main').inert = true;
 }
 
 export function closeModal() {
@@ -157,7 +160,7 @@ export function showChoiceModal(title, text, choices, onSelect) {
     extra.appendChild(btn);
   });
   document.getElementById('modal-overlay').classList.add('show');
-  if (window.gameState.rogue) document.querySelector('main').inert = true;
+  if (window.gameState.rogue || window.gameState.tutorial) document.querySelector('main').inert = true;
 }
 
 export function showRules(extraTabs, openingTab) {

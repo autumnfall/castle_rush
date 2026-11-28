@@ -368,3 +368,4 @@ button:disabled:not(.enemy-card, .hand-card) { opacity: .52; cursor: not-allowed
 
 #tutorial-panel { padding: 12px 16px; margin-bottom: 10px; border-color: var(--gold); }
 #tutorial-panel p { margin: 6px 0 10px; }
+#game-screen .tutorial-target { outline: 3px solid #7ee4fa; outline-offset: -3px; }

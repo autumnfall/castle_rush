@@ -1,77 +1,107 @@
-import { createCard } from './config.js';
-import { computeCoverage } from './core.js';
+import { SUIT_SYMBOLS, rankName } from './config.js';
 
-// Each exercise starts from its own small position and uses the basic game's actions.
-const lessons = [
-  {
-    title: '用手牌攻城',
-    hint: '选中 ♥5 手牌，再点金边的 ♥7 敌人。花色或点数相同就能攻克。只有未被覆盖的敌人可以选中。',
-    result: '♥5 进入弃牌堆，缴获的 ♥7 成为物资。前排被击败后，后面的敌人也露出来了。',
-    done: g => g.enemies[0].defeated,
-  },
-  {
-    title: '♥ 补给',
-    hint: '点击「发动战术」，再点物资区的 ♥2 并确认。红桃物资可以换三张手牌。',
-    result: '♥2 进入弃牌堆，三张新牌加入手牌。',
-    suit: 'hearts', done: g => g.hand.length === 4,
-  },
-  {
-    title: '♦ 侦查',
-    hint: '点击「发动战术」，选择 ♦2 并确认，再依次点击两名金边暗敌。明置后就能看清它们的花色和点数。',
-    result: '两名敌人都已明置，现在可以判断该用哪张手牌攻城。',
-    suit: 'diamonds', done: g => g.enemies.every(e => e.revealed && !e.defeated),
-  },
-  {
-    title: '♣ 强攻',
-    hint: '点击「发动战术」，选择 ♣2 并确认，再点击明置的 ♥7。强攻可以直接击败明置敌人并缴获它。',
-    result: '♣2 进入弃牌堆，♥7 进入物资区，你保留了手牌。',
-    suit: 'clubs', done: g => g.enemies[0].defeated && g.discard.some(c => c.suit === 'clubs' && c.rank === 2),
-  },
-  {
-    title: '♠ 防御',
-    hint: '用 ♥5 攻击金边暗敌。这次花色和点数都不匹配，攻城会失败。提示出现时，确认用 ♠2 代替手牌进入弃牌堆。',
-    result: '敌人已明置，♥5 仍在手中。你已学会四种战术，正式对局的目标是击败全部 16 名敌人。',
-    suit: 'spades', done: g => g.enemies[0].revealed && g.hand.length === 1 && g.discard.some(c => c.suit === 'spades'),
-  },
+const face = card => SUIT_SYMBOLS[card.suit] + rankName(card.rank);
+
+// Layer order follows the basic game's keep, hall and gate layout.
+const enemyFaces = [
+  '♥K','♦K','♣K','♠K', '♣Q','♥3','♠Q','♠8',
+  '♥Q','♦4','♣8', '♣J','♥9', '♥7','♠J','♦6',
+];
+const dealOrder = [
+  '♣A','♣3','♣4','♦8','♦10', '♦2','♣2', // Initial hand and supplies
+  '♥6','♠3','♣5','♦5','♥5',                 // First mulligan
+  '♥2','♠2','♦3', '♣6','♥4','♠4', '♣7','♦7','♥8',
+  '♣9','♥10','♠6', '♣10','♥A','♦9',
 ];
 
-function openLesson(index, startGame) {
-  startGame();
-  const g = window.gameState;
-  const lesson = lessons[index];
-  const scouting = lesson.suit === 'diamonds';
-  const defending = lesson.suit === 'spades';
-  const front = createCard(defending ? 'clubs' : 'hearts', 7);
-  const rear = createCard('diamonds', 9);
-  Object.assign(g, {
-    tutorial: index, hand: [createCard('hearts',5)],
-    supply: lesson.suit ? [createCard(lesson.suit,2)] : [],
-    deck: [createCard('clubs',6),createCard('spades',4),createCard('diamonds',8)],
-    enemies: [
-      { ...front, layer:4, index:0, pos:1, revealed:!scouting && !defending, defeated:false },
-      { ...rear, layer:scouting ? 4 : 3, index:1, pos:scouting ? 5 : 2, revealed:false, defeated:false },
-    ],
-    phase:'playing', message:'按上方教程提示操作，可随时重试本步。',
+export function arrangeDeal(cards, enemies) {
+  const remaining = new Map(cards.map(card => [face(card), card]));
+  function take(key) {
+    const card = remaining.get(key);
+    if (!card) throw new Error('教程牌序重复或缺牌 ' + key);
+    remaining.delete(key);
+    return card;
+  }
+  enemies.forEach((enemy,i) => Object.assign(enemy, take(enemyFaces[i])));
+  const ordered = dealOrder.map(take);
+  return [...remaining.values(), ...ordered.reverse()];
+}
+
+const attack = (hand, enemy, title = '向城堡深处推进', hint = '') =>
+  ({hand, enemy, title, hint: hint || `选中 ${hand}，攻打标出的敌牌。击败前排会逐步露出后排。`});
+const supply = (cost, title, hint) => ({cost, title, hint});
+const refill = cost => supply(cost, '用缴获的红桃补给', `点击「发动战术」，用缴获的 ${cost} 换三张手牌，继续攻城。`);
+const route = [
+  {title:'通关目标与重调', hint:'清空场上全部 16 名敌人即可通关。开局有 5 张手牌和 2 张物资。这手只有梅花和方片，先点蓝框标出的「重调手牌」。尽量让四种花色各有一张，遇到不同敌人时更容易匹配。'},
+  {title:'保留起手', hint:'现在五张手牌已覆盖四种花色，两张 5 还能留给协同。点击「确认手牌」。'},
+  attack('♠3','♦6','试攻暗牌','选中 ♠3，试攻前排最右侧的暗牌。只有未被覆盖的敌人可选；暗牌要在攻城时才知道能否匹配。'),
+  attack('♥6','♦6','用相同点数攻城','刚才攻城失败，♠3 进入弃牌堆，敌人 ♦6 明置。现在用 ♥6 攻打它：花色不同，点数相同也能击败并缴获敌人。'),
+  {...supply('♦2','♦ 侦查','缴获的 ♦6 已进入物资区。点击「发动战术」，用起始物资 ♦2 侦查，再依次点亮前排剩余的两张暗牌。'), reveal:['♥7','♠J']},
+  attack('♥5','♥7','用相同花色攻城','侦查看到了 ♥7。用 ♥5 攻打它：点数不同，花色相同也能成功。'),
+  refill('♥7'),
+  {...supply('♣2','♣ 强攻','点击「发动战术」，用 ♣2 强攻已明置的 ♠J。直接击败它并收为物资，保留手牌。'), target:'♠J'},
+  attack('♥2','♣J','♠ 防御','用 ♥2 试攻标出的暗牌。攻城手牌将被弃掉时，确认用刚缴获的 ♠J 代弃，便能保留 ♥2。'),
+  {title:'两张同点数手牌协同', synergy:true, hint:'点击「发动战术」→「协同」，选中 ♣5 和 ♦5。本次选择补给，弃两张 5 抽三张。实战还可以通过协同发动侦查或强攻。'},
+  attack('♣6','♣J'), attack('♥4','♥9'), refill('♥9'),
+  attack('♥8','♥Q'), attack('♦3','♦4'), attack('♣7','♣8'), refill('♥Q'),
+  attack('♣9','♣Q'), attack('♥10','♥3'), attack('♠2','♠Q'), attack('♠4','♠8'), refill('♥3'),
+  attack('♥A','♥K'), attack('♦7','♦K'), attack('♣10','♣K'), attack('♠6','♠K','最后一名敌人','用 ♠6 攻打最后一名敌人。清空城堡即可获胜。'),
+];
+
+const controls = '.hand-card, .enemy-card, #basic-tactics, #supply-pile .pile-card, #skill-section button, #mulligan-bar button';
+function completed(step,g) {
+  if (step.hand) return g.turn > g.tutorial.startTurn || g.phase === 'gameover';
+  if (g.tutorial.index === 0) return g.mulliganCount > 0;
+  if (g.phase !== 'playing') return false;
+  if (step.cost) return g.discard.some(c => face(c) === step.cost);
+  if (step.synergy) return ['♣5','♦5'].every(key => g.discard.some(c => face(c) === key));
+  return true;
+}
+
+function markCards(container, cards, keys) {
+  const elements = document.getElementById(container).children;
+  cards.forEach((card,i) => {
+    if (keys.includes(face(card))) elements[i].classList.add('tutorial-target');
   });
-  computeCoverage();
-  document.getElementById('mulligan-bar').style.display = 'none';
-  document.getElementById('skill-section').style.display = 'none';
-  window.renderAll();
-  document.getElementById('tutorial-title').focus();
+}
+
+function markControls(step,g) {
+  const mark = selector => document.querySelector(selector).classList.add('tutorial-target');
+  const enemy = keys => markCards('board-area',g.enemies.filter(e => !e.defeated),keys);
+  if (g.phase === 'mulligan') {
+    mark(g.mulliganCount ? '#mulligan-bar button:last-child' : '#btn-mulligan');
+  } else if (step.hand) {
+    if (g.selectedHand === null) markCards('hand-container',g.hand,[step.hand]);
+    else enemy([step.enemy]);
+  } else if (g.phase === 'playing') {
+    mark('#basic-tactics');
+  } else if (g.phase === 'synergy') {
+    markCards('hand-container',g.hand,['♣5','♦5']);
+  } else if (g.skillMode === 'select_supply') {
+    if (step.synergy) mark('#skill-section .skill');
+    else markCards('supply-pile',g.supply,[step.cost]);
+  } else if (g.skillMode === 'reveal') {
+    enemy(g.enemies.filter(e => !e.revealed && step.reveal.includes(face(e))).map(face));
+  } else if (g.skillMode === 'attack') {
+    enemy([step.target]);
+  }
 }
 
 export function render() {
-  const g = window.gameState;
+  const g = window.gameState, guide = g.tutorial;
   const panel = document.getElementById('tutorial-panel');
-  const lesson = lessons[g.tutorial];
-  panel.classList.toggle('hidden', !lesson);
-  if (!lesson) return;
-  const complete = lesson.done(g);
-  document.getElementById('tutorial-title').textContent = `基础教程 ${g.tutorial + 1}/${lessons.length} · ${lesson.title}`;
-  document.getElementById('tutorial-hint').textContent = complete ? lesson.result : lesson.hint;
-  const next = document.getElementById('tutorial-next');
-  next.disabled = !complete;
-  next.textContent = g.tutorial === lessons.length - 1 ? '开始基础游戏' : '下一步';
+  panel.classList.toggle('hidden', !guide);
+  document.querySelectorAll('.tutorial-target').forEach(el => el.classList.remove('tutorial-target'));
+  if (!guide) return;
+  let step = route[guide.index];
+  if (step && completed(step,g)) {
+    guide.index++;
+    guide.startTurn = g.turn;
+    step = route[guide.index];
+  }
+  document.getElementById('tutorial-title').textContent = step ? '基础教程 · ' + step.title : '基础教程 · 城堡已攻克';
+  document.getElementById('tutorial-hint').textContent = step?.hint || '全部 16 名敌人已被击败。返回首页即可开始随机的基础游戏。';
+  if (step) markControls(step,g);
 }
 
 function displayInvite(visible) {
@@ -100,13 +130,19 @@ export function bind(startGame, resetGame, selectMode) {
   };
   document.getElementById('basic-tutorial-start').onclick = () => {
     selectMode('basic');
-    openLesson(0, startGame);
+    startGame('tutorial');
+    document.getElementById('tutorial-title').focus();
   };
-  document.getElementById('tutorial-retry').onclick = () => openLesson(window.gameState.tutorial, startGame);
   document.getElementById('tutorial-exit').onclick = resetGame;
-  document.getElementById('tutorial-next').onclick = () => {
-    const next = window.gameState.tutorial + 1;
-    if (next < lessons.length) openLesson(next, startGame);
-    else startGame();
-  };
+  const screen = document.getElementById('game-screen');
+  screen.addEventListener('click', event => {
+    if (!window.gameState.tutorial) return;
+    const control = event.target.closest(controls);
+    if (control && !control.classList.contains('tutorial-target')) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }, true);
+  // Hand selection and the first scout flip only redraw their respective cards.
+  screen.addEventListener('click', () => { if (window.gameState.tutorial) render(); });
 }
